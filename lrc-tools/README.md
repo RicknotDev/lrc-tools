@@ -16,24 +16,19 @@ Interfaz TUI interactiva (`lrc-tools` / `lt`) + herramientas CLI para quien pref
 
 ## Repositorio
 
-> **Editá esta sección con la URL de tu fork antes de publicar.**
 
 | | |
 |---|---|
-| **Código fuente** | [**github.com/YOUR_USERNAME/lrc-tools**](https://github.com/YOUR_USERNAME/lrc-tools) |
-| **Clonar** | `git clone https://github.com/YOUR_USERNAME/lrc-tools.git` |
+| **Código fuente** | [**https://github.com/RicknotDev/lrc-tools**](https://github.com/RicknotDev/lrc-tools) |
+| **Clonar** | `git clone https://github.com/RicknotDev/lrc-tools` |
 | **Guía completa** | [docs/README.md](docs/README.md) |
 | **Licencia** | [MIT](LICENSE) |
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/lrc-tools.git
+git clone https://github.com/RicknotDev/lrc-tools
 cd lrc-tools
 bash setup.sh
 ```
-
-Sustituí `YOUR_USERNAME` por tu usuario de GitHub (o la organización donde alojes el repo).
-
----
 
 ## Inicio rápido
 
@@ -125,11 +120,11 @@ visualizer:
 
 ## Notas
 
-- La precisión del timing mejora en temas con letra hablada rápida; temas muy nicho a veces no están en LRCLIB.
+- La precisión del timing mejora en temas con letra hablada rápida; temas muy under a veces no están en LRCLIB.
 - Proyecto en evolución; para problemas concretos revisá [docs/README.md](docs/README.md) o abrí un issue en **tu repositorio** (enlace arriba).
 
 ---
 
 ## Créditos
 
-Fork y mejora de un proyecto de visualización de letras en terminal; empaquetado como **lrc-tools** con TUI, rutas XDG y asistente de setup.
+Fork y mejora de un proyecto de visualización de letras en terminal; empaquetado como **tacos-terminal-lyrics** con TUI, rutas XDG y asistente de setup.
