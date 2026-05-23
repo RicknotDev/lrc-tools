@@ -1,11 +1,6 @@
-
 # lrc-tools
 
-**Letras sincronizadas en la terminal** — descarga, procesa y visualiza lyrics en ASCII grande, al ritmo de tu reproductor (MPRIS / `playerctl`).
-
-Interfaz TUI interactiva (`lrc-tools` / `lt`) + herramientas CLI para quien prefiera scripts.
-
-```
+```/dev/null/logo.txt#L1-5
   _      ____   ___    _____           _
  | |    |___ \ / _ \  |_   _|_ _  ___| |_
  | |      __) | | | |   | |/ _` |/ _ \ __|
@@ -13,119 +8,120 @@ Interfaz TUI interactiva (`lrc-tools` / `lt`) + herramientas CLI para quien pref
  |_____|_____| \___/    |_|\__,_|\___|\__|
 ```
 
----
+Terminal synced lyrics toolkit for Linux with CLI utilities, MPRIS/playerctl integration, and a Textual TUI.
 
-## Repositorio
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Linux-informational)](#)
+[![Release](https://img.shields.io/github/v/release/RicknotDev/lrc-tools)](https://github.com/RicknotDev/lrc-tools/releases)
 
+> Quick install: `python3 -m pip install --user git+https://github.com/RicknotDev/lrc-tools`
+>
+> Full extras: `python3 -m pip install --user "lrc-tools[full,timing]"`
 
-| | |
-|---|---|
-| **Código fuente** | [**https://github.com/RicknotDev/lrc-tools**](https://github.com/RicknotDev/lrc-tools) |
-| **Clonar** | `git clone https://github.com/RicknotDev/lrc-tools` |
-| **Guía completa** | [docs/README.md](docs/README.md) |
-| **Licencia** | [MIT](LICENSE) |
+## Features
 
-```bash
-git clone https://github.com/RicknotDev/lrc-tools
-cd lrc-tools
-bash setup.sh
-```
+| Tool | What it does | Example command |
+|---|---|---|
+| `lrc-tools` / `lt` | Launches the interactive terminal UI | `lrc-tools` |
+| `lrc-fetch` | Scans your music library and downloads synced lyrics | `lrc-fetch --audio-dir ~/Music --output-dir ~/.local/share/lrc-tools/lyrics/raw` |
+| `lrc-processor` | Splits long phrases and generates word-level `.wlrc` files | `lrc-processor --lrc-dir raw --audio-dir ~/Music --output-dir processed --wlrc` |
+| `lrc-vis` | Displays synced lyrics in the terminal while your player runs | `lrc-vis --lrc-dir ~/.local/share/lrc-tools/lyrics/processed --wlrc` |
+
+## Installation
+
+### From GitHub
+
+- Editable local install: `bash setup.sh`
+- Direct pip install: `python3 -m pip install --user git+https://github.com/RicknotDev/lrc-tools`
+- With optional dependencies: `python3 -m pip install --user "git+https://github.com/RicknotDev/lrc-tools#egg=lrc-tools[full,timing]"`
+
+### System requirements
+
+- Python 3.12+
+- Linux
+- `playerctl`
+- `ffmpeg` / `ffprobe`
+- `PyYAML`
+
+Optional packages:
+
+- `textual` for the TUI
+- `mutagen` for audio metadata
+- `syncedlyrics` for fallback lyric search
+- `librosa` for better word timing
+
+## Quick start
+
+1. Install the package.
+2. Make sure `~/.local/bin` is in your `PATH`.
+3. Run `lrc-tools` or `lt`.
+4. Download `.lrc` files with `lrc-fetch`.
+5. Convert them to `.wlrc` with `lrc-processor --wlrc`.
+6. Start the visualizer with `lrc-vis --wlrc`.
+
+## Documentation
+
+- [`docs/configuration.md`](docs/configuration.md)
+- [`docs/file-formats.md`](docs/file-formats.md)
+- [`docs/troubleshooting.md`](docs/troubleshooting.md)
+
+## GitHub visibility suggestions
+
+### Topics
+
+`lyrics`, `lrc`, `terminal`, `tui`, `mpris`, `playerctl`, `music`, `python`, `cli`, `syncedlyrics`, `lrclib`, `linux`, `terminal-ui`, `ascii-art`, `karaoke`, `lyrics-viewer`, `music-tools`
+
+### Repository description
+
+Terminal synced lyrics viewer for Linux with MPRIS/playerctl support, LRCLIB fetching, and a Textual TUI.
+
+### Social preview idea
+
+Use an OG image showing a dark Linux terminal with the ASCII logo, a large lyric line in progress, a progress bar, and small labels for `MPRIS`, `playerctl`, and `.wlrc`.
+
+<details>
+<summary>🇪🇸 Leer en español</summary>
+
+## Descripción
+
+`lrc-tools` es una suite para letras sincronizadas en la terminal de Linux, con utilidades CLI, integración con MPRIS/`playerctl` y una interfaz TUI con Textual.
+
+## Instalación rápida
+
+- Instalación desde GitHub: `python3 -m pip install --user git+https://github.com/RicknotDev/lrc-tools`
+- Instalación editable local: `bash setup.sh`
+- Extras opcionales: `python3 -m pip install --user "lrc-tools[full,timing]"`
+
+## Herramientas
+
+| Herramienta | Qué hace | Ejemplo |
+|---|---|---|
+| `lrc-tools` / `lt` | Abre la interfaz interactiva | `lrc-tools` |
+| `lrc-fetch` | Escanea tu música y descarga letras sincronizadas | `lrc-fetch --audio-dir ~/Music --output-dir ~/.local/share/lrc-tools/lyrics/raw` |
+| `lrc-processor` | Procesa `.lrc` y genera `.wlrc` palabra por palabra | `lrc-processor --lrc-dir raw --audio-dir ~/Music --output-dir processed --wlrc` |
+| `lrc-vis` | Muestra las letras sincronizadas en la terminal | `lrc-vis --lrc-dir ~/.local/share/lrc-tools/lyrics/processed --wlrc` |
 
 ## Inicio rápido
 
-```bash
-bash setup.sh
-export PATH="$HOME/.local/bin:$PATH"
+1. Instalá el paquete.
+2. Verificá que `~/.local/bin` esté en el `PATH`.
+3. Ejecutá `lrc-tools` o `lt`.
+4. Descargá letras con `lrc-fetch`.
+5. Procesalas con `lrc-processor --wlrc`.
+6. Abrí el visualizador con `lrc-vis --wlrc`.
 
-lrc-tools    # TUI interactiva (alias: lt)
-```
+## Dependencias opcionales
 
-- Menú: setup, fetch, process, **elegir canción** + visualizer, rutas, dependencias.
-- Atajos: `f` fetch · `p` process · `v` visualizer · `r` rápido · `q` salir.
-- Letras (XDG): `~/.local/share/lrc-tools/lyrics/{raw,processed}`
+- `textual` para la TUI
+- `mutagen` para metadata de audio
+- `syncedlyrics` como fallback de búsqueda
+- `librosa` para timing más preciso por palabra
 
-### CLI manual
+## Documentación
 
-```bash
-MUSIC=~/Music
-RAW=~/.local/share/lrc-tools/lyrics/raw
-OUT=~/.local/share/lrc-tools/lyrics/processed
+- [`docs/configuration.md`](docs/configuration.md)
+- [`docs/file-formats.md`](docs/file-formats.md)
+- [`docs/troubleshooting.md`](docs/troubleshooting.md)
 
-lrc-fetch --audio-dir "$MUSIC" --output-dir "$RAW"
-lrc-processor --lrc-dir "$RAW" --audio-dir "$MUSIC" --output-dir "$OUT" --wlrc
-lrc-vis --lrc-dir "$OUT" --wlrc
-```
-
-Uso diario: `lt` → **Launch visualizer** → elegí canción (reproduce audio + letra) o **Automático** (solo playerctl).
-
-Reproducción local al elegir tema: **mpv** o **ffplay** (`sudo pacman -S mpv ffmpeg`).
-
----
-
-## Desinstalar
-
-```bash
-bash uninstall.sh           # interactivo
-bash uninstall.sh -y        # borra bins, paquete, config y letras
-```
-
----
-
-## Dependencias
-
-**Requeridas:** Python ≥ 3.12, `python-pyyaml`, `ffmpeg` (ffprobe), `playerctl`
-
-**Recomendadas:** `python-mutagen`, `python-syncedlyrics`, `textual` (TUI)
-
-**Opcional:** `python-librosa` — timing por palabra más fino
-
-En Arch: `sudo pacman -S playerctl ffmpeg python-pyyaml python-mutagen`
-
----
-
-## Cómo funciona
-
-| Herramienta | Función |
-|-------------|---------|
-| `lrc-fetch` | Escanea tu música y descarga `.lrc` desde [LRCLIB](https://lrclib.net) (+ syncedlyrics) |
-| `lrc-processor` | Convierte frases largas a `.wlrc` (palabra por palabra) |
-| `lrc-vis` | Muestra la letra en bloques ASCII según `playerctl` |
-| `lrc-tools` / `lt` | TUI: todo lo anterior sin memorizar flags |
-
-Los nombres de archivo de letra deben coincidir con el audio (`Artista - Título.mp3` → mismo stem `.lrc` / `.wlrc`).
-
----
-
-## Configuración
-
-`~/.config/lrc-tools/config.yaml` — plantilla: `config_example.yaml`
-
-```yaml
-puller:
-  preserve_structure: true   # refleja subcarpetas de tu música
-
-visualizer:
-  default_font: block
-  refresh_rate: 0.05
-```
-
----
-
-## Tests
-
-```bash
-./scripts/run_tests.sh
-```
-
----
-
-## Notas
-
-- La precisión del timing mejora en temas con letra hablada rápida; temas muy under a veces no están en LRCLIB.
-- Proyecto en evolución; para problemas concretos revisá [docs/README.md](docs/README.md) o abrí un issue en **tu repositorio** (enlace arriba).
-
----
-
-## Créditos
-
-Fork y mejora de un proyecto de visualización de letras en terminal; empaquetado como **tacos-terminal-lyrics** con TUI, rutas XDG y asistente de setup.
+</details>

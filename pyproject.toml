@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lrc-tools"
+version = "0.1.0"
+description = "Terminal synced lyrics toolkit for Linux with CLI tools and a Textual TUI"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+authors = [
+  { name = "RicknotDev" }
+]
+dependencies = [
+  "PyYAML>=6.0"
+]
+keywords = ["lyrics", "lrc", "terminal", "tui", "mpris", "playerctl", "music", "cli", "python"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Multimedia :: Sound/Audio",
+  "Topic :: Terminals"
+]
+
+[project.optional-dependencies]
+full = [
+  "mutagen>=1.47",
+  "syncedlyrics>=1.0",
+  "textual>=0.60"
+]
+timing = [
+  "librosa>=0.10"
+]
+
+[project.scripts]
+lrc-tools = "tui_main:main"
+lt = "tui_main:main"
+lrc-fetch = "lrc_puller_cli:main"
+lrc-processor = "lrc_processor_cli:main"
+lrc-vis = "lrc_vis_cli:main"
+
+[project.urls]
+Homepage = "https://github.com/RicknotDev/lrc-tools"
+Repository = "https://github.com/RicknotDev/lrc-tools"
+
+[tool.hatch.build]
+include = [
+  "*.py",
+  "tui/*.py",
+  "config_example.yaml",
+  "custom_fonts.json",
+  "README.md",
+  "LICENSE"
+]
