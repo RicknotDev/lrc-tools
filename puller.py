@@ -19,6 +19,7 @@ except ImportError:
 # Suppress syncedlyrics verbose logging
 logging.getLogger("syncedlyrics").setLevel(logging.CRITICAL)
 
+FLAC = MP3 = MP4 = OggOpus = OggVorbis = None
 try:
     from mutagen.flac import FLAC
     from mutagen.mp3 import MP3
@@ -108,23 +109,25 @@ def get_audio_metadata(filepath: Path) -> Optional[Dict[str, str]]:
     try:
         ext = filepath.suffix.lower()
 
-        if ext == ".flac":
+        if ext == ".flac" and FLAC is not None:
             audio = FLAC(filepath)
-        elif ext == ".mp3":
+        elif ext == ".mp3" and MP3 is not None:
             audio = MP3(filepath)
-        elif ext in (".m4a", ".mp4"):
+        elif ext in (".m4a", ".mp4") and MP4 is not None:
             audio = MP4(filepath)
-        elif ext in (".ogg", ".oga"):
+        elif ext in (".ogg", ".oga") and OggVorbis is not None:
             audio = OggVorbis(filepath)
-        elif ext == ".opus":
+        elif ext == ".opus" and OggOpus is not None:
             audio = OggOpus(filepath)
         else:
             return None
 
         if ext in (".m4a", ".mp4"):
             # MP4 atoms use different keys
-            artist = audio.get("\xa9ART", [None])[0]
-            title = audio.get("\xa9nam", [None])[0]
+            artist_values = audio.get("\xa9ART", [None]) or [None]
+            title_values = audio.get("\xa9nam", [None]) or [None]
+            artist = artist_values[0]
+            title = title_values[0]
         else:
             artist_tag = audio.get("artist") or audio.get("ARTIST")
             title_tag = audio.get("title") or audio.get("TITLE")
@@ -287,7 +290,7 @@ def search_syncedlyrics(artist: str, title: str) -> Optional[str]:
     Fallback search using the syncedlyrics library (multi-source).
     Returns raw LRC string or None.
     """
-    if not SYNCEDLYRICS_AVAILABLE:
+    if not SYNCEDLYRICS_AVAILABLE or syncedlyrics_search is None:
         return None
     try:
         result = syncedlyrics_search(

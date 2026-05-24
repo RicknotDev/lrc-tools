@@ -1,17 +1,17 @@
 """
 lrc-tools — Textual TUI
 """
+
 from __future__ import annotations
 
 import asyncio
-import os
 import sys
 from pathlib import Path
 
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.containers import Container, Horizontal, Vertical
 from textual.screen import ModalScreen, Screen
 from textual.widgets import (
     Button,
@@ -25,14 +25,9 @@ from textual.widgets import (
     Static,
 )
 
-try:
-    from lrc_tools import core
-    from lrc_tools.tui.dir_browser import DirectoryBrowserScreen
-    from lrc_tools.tui.song_picker import SongPickerScreen
-except ImportError:
-    import core
-    from tui.dir_browser import DirectoryBrowserScreen
-    from tui.song_picker import SongPickerScreen
+import core
+from tui.dir_browser import DirectoryBrowserScreen
+from tui.song_picker import SongPickerScreen
 
 BANNER = r"""
 [bold #7aa2f7]
@@ -47,25 +42,43 @@ BANNER = r"""
 
 CSS = """
 Screen {
-    background: #0d0e14;
+    background: #0b1020;
+    color: #dbe4ff;
+}
+
+Header {
+    background: #11182d;
+    color: #e5ecff;
+    text-style: bold;
+}
+
+Footer {
+    background: #0f1729;
+    color: #b8c4e6;
 }
 
 #main-grid {
     layout: grid;
     grid-size: 2;
-    grid-columns: 1fr 28;
+    grid-columns: 1fr 32;
+    grid-gutter: 1 2;
     height: 1fr;
+    padding: 1 2;
 }
 
 #content {
     height: 1fr;
-    padding: 0 1;
+    padding: 0 1 1 1;
+}
+
+#content > Static:first-child {
+    margin-bottom: 1;
 }
 
 #status-panel {
-    background: #16161e;
-    border-left: tall #24283b;
-    padding: 1;
+    background: #11182d;
+    border: round #355070;
+    padding: 1 2;
     height: 1fr;
 }
 
@@ -75,35 +88,67 @@ Screen {
 
 .status-title {
     text-style: bold;
-    color: #7aa2f7;
+    color: #8ec5ff;
     margin-bottom: 1;
 }
 
-.status-ok { color: #9ece6a; }
-.status-warn { color: #e0af68; }
-.status-err { color: #f7768e; }
+.status-ok { color: #9fe870; }
+.status-warn { color: #ffd166; }
+.status-err { color: #ff7b7b; }
 
+ListView,
 MenuList {
-    background: #16161e;
-    border: tall #24283b;
+    background: #11182d;
+    border: round #355070;
     padding: 0 1;
     height: auto;
     max-height: 1fr;
 }
 
+ListView > ListItem,
 MenuList > ListItem {
     padding: 0 1;
     height: 3;
+    margin: 0 0 1 0;
 }
 
+ListView > ListItem.--highlight,
 MenuList > ListItem.--highlight {
-    background: #24283b;
+    background: #1c2742;
+    color: #f7fbff;
+    border-left: tall #7aa2f7;
+}
+
+Button {
+    background: #1b2640;
+    color: #eaf1ff;
+    border: round #44648c;
+    margin-top: 1;
+}
+
+Button.-primary,
+Button.-success,
+Button.-warning {
+    text-style: bold;
+}
+
+Input {
+    background: #0f1729;
+    border: round #44648c;
+    color: #eaf1ff;
+    margin: 1 0;
+    padding: 0 1;
+}
+
+RichLog {
+    background: #0a1120;
+    border: round #355070;
+    color: #dbe4ff;
 }
 
 #log-panel {
     height: 1fr;
-    border: tall #24283b;
-    background: #0d0e14;
+    background: transparent;
     margin-top: 1;
 }
 
@@ -112,8 +157,8 @@ MenuList > ListItem.--highlight {
 }
 
 .hint {
-    color: #565f89;
-    margin-top: 1;
+    color: #7f8db3;
+    margin: 1 0;
 }
 
 .hidden {
@@ -125,10 +170,10 @@ Dialog {
 }
 
 #dialog {
-    width: 60;
+    width: 64;
     height: auto;
-    background: #16161e;
-    border: tall #7aa2f7;
+    background: #11182d;
+    border: round #7aa2f7;
     padding: 1 2;
 }
 
@@ -153,15 +198,16 @@ MENU_ITEMS = [
     ("2", "fetch", "Fetch lyrics", "Descargar .lrc desde LRCLIB"),
     ("3", "process", "Process lyrics", "Convertir .lrc → .wlrc"),
     ("4", "vis", "Launch visualizer", "Elegir canción y abrir lrc-vis"),
-    ("5", "paths", "Configure paths", "Carpeta de música y rutas XDG"),
-    ("6", "deps", "Dependency checker", "Ver e instalar dependencias"),
-    ("7", "settings", "Settings", "config.yaml y opciones"),
+    ("5", "download", "Descargar canciones", "Bajar canciones con spotdl a ~/Music"),
+    ("6", "paths", "Configure paths", "Carpeta de música y rutas XDG"),
+    ("7", "deps", "Dependency checker", "Ver e instalar dependencias"),
+    ("8", "settings", "Settings", "config.yaml y opciones"),
     ("q", "exit", "Exit", "Salir"),
 ]
 
 QUICK_HINT = (
-    "[dim]Atajos: [/][bold]1-7[/] menú · [bold]f[/] fetch · [bold]p[/] process · "
-    "[bold]v[/] vis · [bold]r[/] rápido (fetch+process) · [bold]l[/] logs · [bold]q[/] salir"
+    "[dim]Atajos: [/][bold]1-8[/] menú · [bold]f[/] fetch · [bold]p[/] process · "
+    "[bold]v[/] vis · [bold]d[/] descargar canción · [bold]r[/] rápido · [bold]l[/] logs · [bold]q[/] salir"
 )
 
 
@@ -211,13 +257,13 @@ class ConfirmDialog(ModalScreen[bool]):
 class StatusPanel(Static):
     """Sidebar with live system stats."""
 
-    def refresh_stats(self, state: core.AppState) -> None:
-        stats = core.system_stats(state)
-        deps = core.scan_dependencies()
-        missing = [d.label for d in deps if not d.present and d.critical]
+    def refresh_stats(self, state: core.AppState, snapshot: dict | None = None) -> None:
+        snapshot = snapshot or core.sidebar_snapshot(state)
+        stats = snapshot["stats"]
+        missing = snapshot["missing"]
         tools = "✓" if stats["tools"] else "✗"
         deps_s = "✓" if stats["deps_ok"] else "✗"
-        music = stats["music_dir"]
+        music = str(stats["music_dir"])
         if len(music) > 22:
             music = "…" + music[-21:]
 
@@ -234,13 +280,15 @@ class StatusPanel(Static):
         ]
         if missing:
             lines.append(f"[#f7768e]Falta: {', '.join(missing[:2])}[/]")
-        lines.extend([
-            "",
-            "[dim]XDG raw[/]",
-            f"[dim]{core.LYRICS_RAW}[/]",
-            "[dim]XDG out[/]",
-            f"[dim]{core.LYRICS_PROCESSED}[/]",
-        ])
+        lines.extend(
+            [
+                "",
+                "[dim]XDG raw[/]",
+                f"[dim]{core.LYRICS_RAW}[/]",
+                "[dim]XDG out[/]",
+                f"[dim]{core.LYRICS_PROCESSED}[/]",
+            ]
+        )
         self.update("\n".join(lines))
 
 
@@ -253,12 +301,14 @@ class MainMenu(Screen):
         Binding("2", "menu_fetch", "Fetch", show=False),
         Binding("3", "menu_process", "Process", show=False),
         Binding("4", "menu_vis", "Vis", show=False),
-        Binding("5", "menu_paths", "Paths", show=False),
-        Binding("6", "menu_deps", "Deps", show=False),
-        Binding("7", "menu_settings", "Settings", show=False),
+        Binding("5", "menu_download", "Download", show=False),
+        Binding("6", "menu_paths", "Paths", show=False),
+        Binding("7", "menu_deps", "Deps", show=False),
+        Binding("8", "menu_settings", "Settings", show=False),
         Binding("f", "menu_fetch", "Fetch", show=False),
         Binding("p", "menu_process", "Process", show=False),
         Binding("v", "menu_vis", "Vis", show=False),
+        Binding("d", "menu_download", "Download", show=False),
         Binding("r", "quick_run", "Rápido", show=False),
         Binding("l", "toggle_logs", "Logs", show=False),
         Binding("R", "refresh_status", "Actualizar", show=False),
@@ -292,10 +342,11 @@ class MainMenu(Screen):
 
     def on_mount(self) -> None:
         self.query_one("#menu", ListView).focus()
+        self.query_one(StatusPanel).update("[dim]Cargando estado…[/]")
         self.refresh_sidebar()
         core.ensure_lyrics_dirs()
         core.ensure_config()
-        self.set_interval(5, self.refresh_sidebar)
+        self.set_interval(8, self.refresh_sidebar)
         if core.is_first_run():
             self.app.notify(
                 "Primera vez: ejecutá «Asistente de setup» (tecla 1)",
@@ -307,7 +358,15 @@ class MainMenu(Screen):
         self.refresh_sidebar()
 
     def refresh_sidebar(self) -> None:
-        self.query_one(StatusPanel).refresh_stats(self.app_state)
+        self._refresh_sidebar_worker()
+
+    def _apply_sidebar_snapshot(self, snapshot: dict) -> None:
+        self.query_one(StatusPanel).refresh_stats(self.app_state, snapshot)
+
+    @work(thread=True, exclusive=True)
+    def _refresh_sidebar_worker(self) -> None:
+        snapshot = core.sidebar_snapshot(self.app_state)
+        self.app.call_from_thread(self._apply_sidebar_snapshot, snapshot)
 
     def toggle_logs(self) -> None:
         panel = self.query_one("#log-panel")
@@ -324,7 +383,9 @@ class MainMenu(Screen):
         log.write(line)
 
     async def _confirm(self, msg: str, *, default_yes: bool = True) -> bool:
-        return await self.app.push_screen_wait(ConfirmDialog(msg, default_yes=default_yes))
+        return await self.app.push_screen_wait(
+            ConfirmDialog(msg, default_yes=default_yes)
+        )
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         action = event.item.id or ""
@@ -336,6 +397,7 @@ class MainMenu(Screen):
             "fetch": self.action_menu_fetch,
             "process": self.action_menu_process,
             "vis": self.action_menu_vis,
+            "download": self.action_menu_download,
             "paths": self.action_menu_paths,
             "deps": self.action_menu_deps,
             "settings": self.action_menu_settings,
@@ -351,10 +413,15 @@ class MainMenu(Screen):
         self.app.push_screen(TaskScreen("fetch", self.app_state), self._after_subscreen)
 
     def action_menu_process(self) -> None:
-        self.app.push_screen(TaskScreen("process", self.app_state), self._after_subscreen)
+        self.app.push_screen(
+            TaskScreen("process", self.app_state), self._after_subscreen
+        )
 
     def action_menu_vis(self) -> None:
         self._launch_vis()
+
+    def action_menu_download(self) -> None:
+        self.app.push_screen(DownloaderScreen(self.app_state), self._after_subscreen)
 
     def action_menu_paths(self) -> None:
         self.app.push_screen(PathsScreen(self.app_state), self._after_subscreen)
@@ -376,7 +443,9 @@ class MainMenu(Screen):
 
     def _launch_vis(self) -> None:
         if not core.count_files(self.app_state.lyrics_processed, "*.wlrc"):
-            self.app.notify("No hay archivos .wlrc. Procesá letras primero.", severity="warning")
+            self.app.notify(
+                "No hay archivos .wlrc. Procesá letras primero.", severity="warning"
+            )
             return
         self.app.push_screen(SongPickerScreen(self.app_state), self._on_song_picked)
 
@@ -390,6 +459,7 @@ class MainMenu(Screen):
             self.app.notify(str(e), severity="error")
             return
         self.app.exit_launch = cmd  # type: ignore[attr-defined]
+        self.app.reopen_picker = isinstance(result, Path)  # type: ignore[attr-defined]
         self.app.exit()
 
     def action_quit(self) -> None:
@@ -537,6 +607,110 @@ class QuickScreen(Screen):
         self.dismiss(True)
 
 
+class DownloaderScreen(Screen):
+    BINDINGS = [
+        Binding("escape", "back", "Volver"),
+        Binding("ctrl+s", "download", "Descargar"),
+    ]
+
+    def __init__(self, state: core.AppState) -> None:
+        super().__init__()
+        self.state = state
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("[bold #7aa2f7]Descargar canciones[/]")
+        yield Static(
+            "Pegá un link de Spotify / YouTube / playlist. Se descargará con spotdl en ~/Music.",
+            classes="hint",
+        )
+        yield Input(placeholder="https://...", id="song-url")
+        yield Static(f"[dim]Destino: {core.download_music_dir()}[/]")
+        yield Button("Descargar", id="download", variant="primary")
+        yield RichLog(id="log", highlight=True, markup=True)
+        yield Footer()
+
+    def action_back(self) -> None:
+        self.dismiss(None)
+
+    def action_download(self) -> None:
+        self._start_download()
+
+    @on(Button.Pressed, "#download")
+    def download_btn(self) -> None:
+        self._start_download()
+
+    def _start_download(self) -> None:
+        self._run_download()
+
+    @work(exclusive=True)
+    async def _run_download(self) -> None:
+        log = self.query_one("#log", RichLog)
+        url = self.query_one("#song-url", Input).value.strip()
+        if not url:
+            self.app.notify("Pegá un link primero", severity="warning")
+            return
+
+        if not core.command_exists("spotdl"):
+            log.write("[yellow]spotdl no encontrado — instalando automáticamente…[/]")
+            ok = await self._stream_cmd(log, self._spotdl_install_cmds())
+            if not ok:
+                log.write("[red]✗ No se pudo instalar spotdl[/]")
+                self.app.notify("No se pudo instalar spotdl", severity="error")
+                return
+            log.write("[green]✓ spotdl instalado[/]\n")
+
+        destination = core.download_music_dir()
+        destination.mkdir(parents=True, exist_ok=True)
+        self.state.music_dir = destination
+        core.save_state(self.state)
+
+        try:
+            cmd = core.spotdl_cmd(url)
+        except ValueError as e:
+            self.app.notify(str(e), severity="error")
+            return
+
+        log.write(f"[bold]Descargando en[/] {destination}")
+        log.write(f"[dim]{' '.join(cmd)}[/]\n")
+
+        ok = await self._stream_cmd(log, [cmd])
+        if ok:
+            log.write("\n[green]✓ Descarga completada[/]")
+            self.app.notify("Canción descargada en ~/Music")
+        else:
+            log.write("\n[red]✗ La descarga falló[/]")
+            self.app.notify("La descarga falló", severity="error")
+
+    def _spotdl_install_cmds(self) -> list[list[str]]:
+        cmds: list[list[str]] = []
+        if core.command_exists("pipx"):
+            cmds.append(["pipx", "install", "spotdl"])
+        cmds.append([sys.executable, "-m", "pip", "install", "spotdl", "--user"])
+        return cmds
+
+    async def _stream_cmd(self, log: RichLog, cmds: list[list[str]]) -> bool:
+        """Run each command until one succeeds. Stream output to log."""
+        for cmd in cmds:
+            log.write(f"[dim]{' '.join(cmd)}[/]")
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+            )
+            assert proc.stdout
+            while True:
+                line = await proc.stdout.readline()
+                if not line:
+                    break
+                text = line.decode(errors="replace").rstrip()
+                if text:
+                    log.write(text)
+            if await proc.wait() == 0:
+                return True
+        return False
+
+
 class PathsScreen(Screen):
     BINDINGS = [
         Binding("escape", "back", "Volver"),
@@ -555,7 +729,9 @@ class PathsScreen(Screen):
         yield Input(value=str(self.state.music_dir), id="music", classes="PathInput")
         yield Button("Examinar carpetas (b)", id="browse", variant="default")
         n = core.count_audio(self.state.music_dir)
-        yield Static(f"[dim]Actual: {n} archivos de audio detectados[/]", id="audio-count")
+        yield Static(
+            f"[dim]Actual: {n} archivos de audio detectados[/]", id="audio-count"
+        )
         yield Static(
             f"[dim]Letras LRC (XDG):\n{core.LYRICS_RAW}\n\n"
             f"Letras WLRC (XDG):\n{core.LYRICS_PROCESSED}[/]"
@@ -571,7 +747,9 @@ class PathsScreen(Screen):
         self._open_browser()
 
     def _open_browser(self) -> None:
-        start = Path(self.query_one("#music", Input).value.strip() or self.state.music_dir)
+        start = Path(
+            self.query_one("#music", Input).value.strip() or self.state.music_dir
+        )
 
         def picked(path: Path | None) -> None:
             if path:
@@ -815,7 +993,7 @@ class SetupWizard(Screen):
             w(f"[red]{e}[/]")
             return
 
-        w(f"\n[bold]Paso 5/5[/] Process")
+        w("\n[bold]Paso 5/5[/] Process")
         try:
             cmd = core.process_cmd(self.state)
             code = await self._pipe(cmd, log)
@@ -854,16 +1032,27 @@ class LrcToolsApp(App):
         Binding("question_mark", "help", "Ayuda"),
     ]
 
-    def __init__(self, state: core.AppState | None = None, *, quick: bool = False) -> None:
+    def __init__(
+        self,
+        state: core.AppState | None = None,
+        *,
+        quick: bool = False,
+        reopen_picker: bool = False,
+    ) -> None:
         super().__init__()
         self.state = state or core.default_state()
         self.exit_launch: list[str] | None = None
+        self.reopen_picker: bool = False
         self._quick = quick
+        self._reopen_picker = reopen_picker
 
     def on_mount(self) -> None:
-        self.push_screen(MainMenu(self.state))
+        menu = MainMenu(self.state)
+        self.push_screen(menu)
         if self._quick:
             self.push_screen(QuickScreen(self.state))
+        elif self._reopen_picker:
+            self.call_after_refresh(menu.action_menu_vis)
 
     def action_help(self) -> None:
         self.notify(QUICK_HINT, timeout=8)
@@ -878,15 +1067,26 @@ def run_tui(*, quick: bool = False) -> int:
         )
         return 1
 
+    import subprocess
+
     state = core.default_state()
     core.ensure_lyrics_dirs()
+    reopen_picker = False
 
-    app = LrcToolsApp(state, quick=quick)
-    app.run()
-    launch = getattr(app, "exit_launch", None)
-    if launch:
-        os.execvp(launch[0], launch)
-    return 0
+    while True:
+        app = LrcToolsApp(state, quick=quick, reopen_picker=reopen_picker)
+        app.run()
+        launch = getattr(app, "exit_launch", None)
+        if not launch:
+            return 0
+
+        result = subprocess.run(launch)
+        reopen_picker = bool(
+            getattr(app, "reopen_picker", False) and result.returncode == 10
+        )
+        quick = False
+        if not reopen_picker:
+            return result.returncode
 
 
 def main() -> None:

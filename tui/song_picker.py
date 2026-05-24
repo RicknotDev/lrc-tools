@@ -1,4 +1,5 @@
 """Pick a song before launching the visualizer."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,12 +10,7 @@ from textual.binding import Binding
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Input, Label, ListItem, ListView, Static
 
-try:
-    from lrc_tools import core
-except ImportError:
-    import core
-
-AUTO_ID = "auto"
+import core
 
 
 class SongPickerScreen(Screen):
@@ -30,6 +26,8 @@ class SongPickerScreen(Screen):
         self.state = state
         self._all_tracks: list[core.TrackEntry] = []
         self._id_to_path: dict[str, Path] = {}
+        self._auto_item_id = "auto-0"
+        self._rebuild_serial = 0
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -52,11 +50,16 @@ class SongPickerScreen(Screen):
         lv = self.query_one("#songs", ListView)
         lv.clear()
         self._id_to_path.clear()
+        self._rebuild_serial += 1
+        serial = self._rebuild_serial
+        self._auto_item_id = f"auto-{serial}"
 
         lv.append(
             ListItem(
-                Label("[bold #9ece6a]◉ Automático[/]\n[dim]Seguir lo que suena en el reproductor[/]"),
-                id=AUTO_ID,
+                Label(
+                    "[bold #9ece6a]◉ Automático[/]\n[dim]Seguir lo que suena en el reproductor[/]"
+                ),
+                id=self._auto_item_id,
             )
         )
         q = query.strip().lower()
@@ -64,7 +67,7 @@ class SongPickerScreen(Screen):
         for entry in self._all_tracks:
             if q and q not in entry.label.lower():
                 continue
-            item_id = f"track-{shown}"
+            item_id = f"track-{serial}-{shown}"
             self._id_to_path[item_id] = entry.path
             lv.append(
                 ListItem(Label(f"♪ {entry.label}"), id=item_id),
@@ -72,7 +75,9 @@ class SongPickerScreen(Screen):
             shown += 1
         total = len(self._all_tracks)
         self.query_one("#count", Static).update(
-            f"[dim]{shown} de {total} canciones[/]" if q else f"[dim]{total} canciones con letra[/]"
+            f"[dim]{shown} de {total} canciones[/]"
+            if q
+            else f"[dim]{total} canciones con letra[/]"
         )
 
     @on(Input.Changed, "#filter")
@@ -87,7 +92,7 @@ class SongPickerScreen(Screen):
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         item_id = event.item.id or ""
-        if item_id == AUTO_ID:
+        if item_id == self._auto_item_id:
             self.dismiss(None)
             return
         path = self._id_to_path.get(item_id)

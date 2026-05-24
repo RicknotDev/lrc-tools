@@ -1,18 +1,10 @@
-"""Entry point for lrc-tools TUI (installed as lrc_tools.tui_main)."""
+"""Entry point for lrc-tools TUI."""
 
 from __future__ import annotations
 
+import importlib
 import subprocess
 import sys
-from pathlib import Path
-
-try:
-    from optional_deps import check_optional
-except ImportError:
-    try:
-        from lrc_tools.optional_deps import check_optional
-    except ImportError:
-        check_optional = None
 
 
 def _simple_menu() -> int:
@@ -42,21 +34,13 @@ def _simple_menu() -> int:
 
 
 def main() -> int:
-    textual = None
-    if check_optional is not None:
-        textual = check_optional(
-            "textual",
-            'python3 -m pip install --user "lrc-tools[full]"',
-            "the TUI interface",
-        )
-
-    if textual is None:
+    try:
+        importlib.import_module("textual")
+    except ImportError:
         return _simple_menu()
 
-    try:
-        from lrc_tools.tui.app import main as tui_main
-    except ImportError:
-        from tui.app import main as tui_main
+    from tui.app import main as tui_main
+
     return tui_main() or 0
 
 

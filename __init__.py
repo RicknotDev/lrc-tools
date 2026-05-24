@@ -1,25 +1,13 @@
-"""
-lrc-tools — terminal lyrics visualizer and LRC processing suite
-"""
+"""lrc-tools — terminal lyrics visualizer and LRC processing suite."""
+
+from __future__ import annotations
 
 import importlib
 import sys
 from types import ModuleType
 
-from . import (
-    audio,
-    config,
-    fonts,
-    parser,
-    processor_main,
-    processor_splitter,
-    puller,
-    visualizer_display,
-    visualizer_main,
-    visualizer_player,
-)
-
 __version__ = "0.1.0"
+__all__ = ["__version__", "check_optional", "print_missing_optional"]
 
 
 def print_missing_optional(

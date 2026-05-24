@@ -2,8 +2,9 @@
 LRC Visualizer - Main display loop
 Synchronizes lyrics with media player
 """
-import time
+
 import threading
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -21,7 +22,9 @@ class SyncData:
         self.pinned_title: Optional[str] = None
 
 
-def position_monitor(sync_data: SyncData, get_position_func, get_track_func, get_status_func):
+def position_monitor(
+    sync_data: SyncData, get_position_func, get_track_func, get_status_func
+):
     """Background thread to monitor playback position and detect seeking."""
     last_check = time.time()
     expected_pos = None
@@ -43,7 +46,7 @@ def position_monitor(sync_data: SyncData, get_position_func, get_track_func, get
             continue
 
         status = get_status_func()
-        if status == 'Paused':
+        if status == "Paused":
             sync_data.position = actual_pos
             sync_data.should_resync = True
             sync_data.paused = True
@@ -70,19 +73,47 @@ def run_visualizer(
     lrc_dir: Path,
     audio_dir: Optional[Path] = None,
     is_wlrc: bool = False,
-    font_data: dict = None,
+    font_data: Optional[dict] = None,
     refresh_rate: float = 0.05,
     fixed_lrc: Optional[Path] = None,
     pin_track: bool = False,
     play_audio: bool = False,
-):
+) -> int:
     """Run the LRC visualizer main loop."""
     import sys
 
-    from .visualizer_player import get_position, get_track, get_status, get_audio_file_info
-    from .visualizer_display import display_text, display_waiting, hide_cursor, show_cursor, clear_screen
-    from .parser import parse_lrc_simple
-    from .audio import find_lrc_for_audio
+    try:
+        from .audio import find_lrc_for_audio
+        from .parser import parse_lrc_simple
+        from .visualizer_display import (
+            clear_screen,
+            display_text,
+            display_waiting,
+            hide_cursor,
+            show_cursor,
+        )
+        from .visualizer_player import (
+            get_audio_file_info,
+            get_position,
+            get_status,
+            get_track,
+        )
+    except ImportError:
+        from audio import find_lrc_for_audio
+        from parser import parse_lrc_simple
+        from visualizer_display import (
+            clear_screen,
+            display_text,
+            display_waiting,
+            hide_cursor,
+            show_cursor,
+        )
+        from visualizer_player import (
+            get_audio_file_info,
+            get_position,
+            get_status,
+            get_track,
+        )
 
     hide_cursor()
     clear_screen()
@@ -99,16 +130,23 @@ def run_visualizer(
         sync_data.pinned_title = fixed_lrc.stem
 
     if play_audio and fixed_lrc and audio_dir:
-        from .visualizer_audio import LocalAudioPlayer, resolve_audio_for_lyrics
+        try:
+            from .visualizer_audio import LocalAudioPlayer, resolve_audio_for_lyrics
+        except ImportError:
+            from visualizer_audio import LocalAudioPlayer, resolve_audio_for_lyrics
 
         audio_path = resolve_audio_for_lyrics(fixed_lrc, audio_dir)
         if audio_path:
             local_player = LocalAudioPlayer()
             if local_player.play(audio_path):
                 pinned_title = sync_data.pinned_title or fixed_lrc.stem
+
+                def pinned_track_func() -> tuple[str, str]:
+                    return ("", pinned_title)
+
                 get_pos = local_player.get_position
                 get_st = local_player.get_status
-                get_trk = lambda t=pinned_title: ("", t)
+                get_trk = pinned_track_func
                 print(f"Reproduciendo: {audio_path.name}", file=sys.stderr)
             else:
                 print(
@@ -133,6 +171,9 @@ def run_visualizer(
         last_title = None
 
         while sync_data.running:
+            if local_player and get_st() == "Stopped":
+                return 10
+
             if sync_data.pinned_lrc:
                 lrc = sync_data.pinned_lrc
                 title = sync_data.pinned_title or lrc.stem
@@ -163,7 +204,7 @@ def run_visualizer(
                     lrc_dir,
                     artist,
                     title,
-                    is_wlrc=is_wlrc
+                    is_wlrc=is_wlrc,
                 )
 
                 if not lrc:
@@ -178,6 +219,8 @@ def run_visualizer(
 
             pos = get_pos()
             if pos is None:
+                if local_player and get_st() == "Stopped":
+                    return 10
                 time.sleep(1)
                 continue
 
@@ -204,6 +247,9 @@ def run_visualizer(
             sync_data.position = pos
 
             while idx < len(lines):
+                if local_player and get_st() == "Stopped":
+                    return 10
+
                 if sync_data.should_resync:
                     if not sync_data.pinned_lrc:
                         new_track = get_trk()
@@ -227,7 +273,9 @@ def run_visualizer(
                 current_pos = start_pos + elapsed
 
                 _, text = lines[idx]
-                display_text(text, use_block_letters=True, font_data=font_data, clear=True)
+                display_text(
+                    text, use_block_letters=True, font_data=font_data, clear=True
+                )
 
                 if idx + 1 < len(lines):
                     next_start, _ = lines[idx + 1]
@@ -238,10 +286,12 @@ def run_visualizer(
                 time.sleep(refresh_rate)
 
     except KeyboardInterrupt:
-        pass
+        return 0
     finally:
         sync_data.running = False
         if local_player:
             local_player.stop()
         show_cursor()
         clear_screen()
+
+    return 0
