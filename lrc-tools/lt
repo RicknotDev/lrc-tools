@@ -1,6 +1,0 @@
-#!/usr/bin/env python3
-"""Short alias for lrc-tools."""
-import runpy
-from pathlib import Path
-
-runpy.run_path(str(Path(__file__).resolve().parent / "lrc-tools"), run_name="__main__")
