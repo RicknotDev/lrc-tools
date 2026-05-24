@@ -15,9 +15,9 @@ Terminal synced lyrics toolkit for Linux with CLI utilities, MPRIS/playerctl int
 [![Platform](https://img.shields.io/badge/platform-Linux-informational)](#)
 [![Release](https://img.shields.io/github/v/release/RicknotDev/lrc-tools)](https://github.com/RicknotDev/lrc-tools/releases)
 
-> Quick install: `python3 -m pip install --user git+https://github.com/RicknotDev/lrc-tools`
+> Quick install: `python3 -m pip install --user "git+https://github.com/RicknotDev/lrc-tools#egg=lrc-tools[full,timing]"`
 >
-> Full extras: `python3 -m pip install --user "lrc-tools[full,timing]"`
+> Local dev install: `make install`
 
 ## Features
 
@@ -32,9 +32,10 @@ Terminal synced lyrics toolkit for Linux with CLI utilities, MPRIS/playerctl int
 
 ### From GitHub
 
-- Editable local install: `bash setup.sh`
-- Direct pip install: `python3 -m pip install --user git+https://github.com/RicknotDev/lrc-tools`
-- With optional dependencies: `python3 -m pip install --user "git+https://github.com/RicknotDev/lrc-tools#egg=lrc-tools[full,timing]"`
+- Editable local install with all runtime dependencies: `bash setup.sh`
+- Editable local install via Makefile: `make install`
+- Minimal editable install: `make install-minimal`
+- Direct pip install with the default full dependency set: `python3 -m pip install --user "git+https://github.com/RicknotDev/lrc-tools#egg=lrc-tools[full,timing]"`
 
 ### System requirements
 
@@ -44,12 +45,20 @@ Terminal synced lyrics toolkit for Linux with CLI utilities, MPRIS/playerctl int
 - `ffmpeg` / `ffprobe`
 - `PyYAML`
 
-Optional packages:
+Default Python install includes:
 
 - `textual` for the TUI
 - `mutagen` for audio metadata
 - `syncedlyrics` for fallback lyric search
 - `librosa` for better word timing
+
+Handy development commands:
+
+- `make install`
+- `make uninstall`
+- `make test`
+- `make build`
+- `make clean`
 
 ## Quick start
 
@@ -89,9 +98,10 @@ Use an OG image showing a dark Linux terminal with the ASCII logo, a large lyric
 
 ## Instalación rápida
 
-- Instalación desde GitHub: `python3 -m pip install --user git+https://github.com/RicknotDev/lrc-tools`
+- Instalación desde GitHub con todas las dependencias por defecto: `python3 -m pip install --user "git+https://github.com/RicknotDev/lrc-tools#egg=lrc-tools[full,timing]"`
 - Instalación editable local: `bash setup.sh`
-- Extras opcionales: `python3 -m pip install --user "lrc-tools[full,timing]"`
+- Instalación editable con Makefile: `make install`
+- Instalación mínima: `make install-minimal`
 
 ## Herramientas
 
@@ -111,12 +121,20 @@ Use an OG image showing a dark Linux terminal with the ASCII logo, a large lyric
 5. Procesalas con `lrc-processor --wlrc`.
 6. Abrí el visualizador con `lrc-vis --wlrc`.
 
-## Dependencias opcionales
+## Dependencias instaladas por defecto
 
 - `textual` para la TUI
 - `mutagen` para metadata de audio
 - `syncedlyrics` como fallback de búsqueda
 - `librosa` para timing más preciso por palabra
+
+## Comandos útiles
+
+- `make install`
+- `make uninstall`
+- `make test`
+- `make build`
+- `make clean`
 
 ## Documentación
 
