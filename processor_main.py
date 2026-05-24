@@ -136,7 +136,10 @@ def process_long_phrases(
     max_words_per_phrase: int = 8,
 ) -> List[Dict]:
     """Process LRC lines, splitting phrases that are too long or have commas"""
-    from .processor_splitter import split_phrase_intelligently
+    try:
+        from .processor_splitter import split_phrase_intelligently
+    except ImportError:
+        from processor_splitter import split_phrase_intelligently
 
     result = []
 
@@ -189,26 +192,30 @@ def process_lrc_file(
     verbose: bool = True,
 ) -> bool:
     """Process a single LRC file"""
-    from .audio import find_audio_for_lrc, get_audio_duration
-    from .parser import parse_lrc, write_lrc
+    try:
+        from .audio import find_audio_for_lrc, get_audio_duration
+        from .parser import parse_lrc, write_lrc
+    except ImportError:
+        from audio import find_audio_for_lrc, get_audio_duration
+        from parser import parse_lrc, write_lrc
 
     if verbose:
-        print(f"\n{'=' * 60}")
+        print("\n" + "=" * 60)
         print(f"Processing: {lrc_path.name}")
-        print(f"{'=' * 60}")
+        print("=" * 60)
 
     output_filename = lrc_path.stem + ".wlrc" if output_wlrc else lrc_path.name
     output_path = output_dir / output_filename
 
     if output_path.exists() and not overwrite:
         if verbose:
-            print(f"[Skip] Output already exists (use --overwrite)")
+            print("[Skip] Output already exists (use --overwrite)")
         return False
 
     lines = parse_lrc(lrc_path)
     if not lines:
         if verbose:
-            print(f"[Error] No valid lines in LRC")
+            print("[Error] No valid lines in LRC")
         return False
 
     if verbose:
@@ -229,7 +236,7 @@ def process_lrc_file(
                 print(f"[Estimate] Using: {duration:.2f}s")
     elif require_audio:
         if verbose:
-            print(f"[Error] No audio file found")
+            print("[Error] No audio file found")
         return False
     else:
         duration = lines[-1]["timestamp"] + 5.0

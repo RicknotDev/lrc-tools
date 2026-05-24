@@ -1,6 +1,7 @@
 """
 Reproducción local de audio para el visualizador (mpv con IPC, ffplay como respaldo).
 """
+
 from __future__ import annotations
 
 import json
@@ -152,9 +153,14 @@ class LocalAudioPlayer:
         self._backend = None
 
 
-def resolve_audio_for_lyrics(lrc_path: Path, audio_dir: Optional[Path]) -> Optional[Path]:
+def resolve_audio_for_lyrics(
+    lrc_path: Path, audio_dir: Optional[Path]
+) -> Optional[Path]:
     if not audio_dir or not audio_dir.is_dir():
         return None
-    from .audio import find_audio_for_lrc
+    try:
+        from .audio import find_audio_for_lrc
+    except ImportError:
+        from audio import find_audio_for_lrc
 
     return find_audio_for_lrc(lrc_path, audio_dir)

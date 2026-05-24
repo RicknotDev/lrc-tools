@@ -1,6 +1,7 @@
 """
 LRC Puller CLI - Batch download synchronized lyrics from LRCLIB
 """
+
 import argparse
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -10,12 +11,13 @@ from pathlib import Path
 def _progress_bar(processed: int, total: int, found: int, errors: int):
     bar_len = 40
     filled = int(bar_len * processed / total)
-    bar = '█' * filled + '░' * (bar_len - filled)
+    bar = "█" * filled + "░" * (bar_len - filled)
     pct = (processed / total) * 100
     print(
         f"\r  [{bar}] {processed}/{total} ({pct:.1f}%)"
         f" — Found: {found} | Errors: {errors}",
-        end='', flush=True
+        end="",
+        flush=True,
     )
 
 
@@ -23,24 +25,39 @@ def main():
     parser = argparse.ArgumentParser(
         description="Batch download LRC lyrics from LRCLIB (with syncedlyrics fallback)"
     )
-    parser.add_argument('--audio-dir', type=Path, required=True,
-                        help='Directory containing audio files')
-    parser.add_argument('--output-dir', type=Path, required=True,
-                        help='Directory to save .lrc files')
-    parser.add_argument('--search-threads', type=int, default=None,
-                        help='Concurrent search threads (default: 5)')
-    parser.add_argument('--download-threads', type=int, default=None,
-                        help='Concurrent download threads (default: 5)')
-    parser.add_argument('--overwrite', action='store_true',
-                        help='Overwrite existing .lrc files')
-    parser.add_argument('--no-preserve-structure', action='store_true',
-                        help='Flatten output dir instead of mirroring audio dir structure')
-    parser.add_argument('--plain-only', action='store_true',
-                        help='Prefer plain lyrics over synced')
-    parser.add_argument('--config', type=Path,
-                        help='Path to config.yaml')
-    parser.add_argument('-y', '--yes', action='store_true',
-                        help='Download without confirmation prompt')
+    parser.add_argument(
+        "--audio-dir", type=Path, required=True, help="Directory containing audio files"
+    )
+    parser.add_argument(
+        "--output-dir", type=Path, required=True, help="Directory to save .lrc files"
+    )
+    parser.add_argument(
+        "--search-threads",
+        type=int,
+        default=None,
+        help="Concurrent search threads (default: 5)",
+    )
+    parser.add_argument(
+        "--download-threads",
+        type=int,
+        default=None,
+        help="Concurrent download threads (default: 5)",
+    )
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Overwrite existing .lrc files"
+    )
+    parser.add_argument(
+        "--no-preserve-structure",
+        action="store_true",
+        help="Flatten output dir instead of mirroring audio dir structure",
+    )
+    parser.add_argument(
+        "--plain-only", action="store_true", help="Prefer plain lyrics over synced"
+    )
+    parser.add_argument("--config", type=Path, help="Path to config.yaml")
+    parser.add_argument(
+        "-y", "--yes", action="store_true", help="Download without confirmation prompt"
+    )
 
     args = parser.parse_args()
 
@@ -56,19 +73,26 @@ def main():
     # Load config, let CLI args override
     try:
         from .config import Config
-        cfg = Config(args.config).puller
     except ImportError:
-        cfg = None
+        try:
+            from config import Config
+        except ImportError:
+            Config = None
+
+    cfg = Config(args.config).puller if Config else None
 
     prefer_synced = not args.plain_only
     preserve_structure = not args.no_preserve_structure
     overwrite = args.overwrite
+
     def prompt_threads(label, default):
         if default:
             return default
         while True:
             try:
-                val = input(f"  {label} threads (1-40, default {cfg.search_threads if cfg else 5}): ").strip()
+                val = input(
+                    f"  {label} threads (1-40, default {cfg.search_threads if cfg else 5}): "
+                ).strip()
                 if not val:
                     return cfg.search_threads if cfg else 5
                 n = int(val)
@@ -94,24 +118,43 @@ def main():
     try:
         from .audio import get_audio_files
         from .puller import (
-            extract_metadata, search_song, save_lyrics,
-            resolve_output_path, MUTAGEN_AVAILABLE, SYNCEDLYRICS_AVAILABLE
+            MUTAGEN_AVAILABLE,
+            SYNCEDLYRICS_AVAILABLE,
+            extract_metadata,
+            resolve_output_path,
+            save_lyrics,
+            search_song,
         )
-    except ImportError as e:
-        print(f"Error: could not import required module — {e}")
-        return 1
+    except ImportError:
+        try:
+            from audio import get_audio_files
+            from puller import (
+                MUTAGEN_AVAILABLE,
+                SYNCEDLYRICS_AVAILABLE,
+                extract_metadata,
+                resolve_output_path,
+                save_lyrics,
+                search_song,
+            )
+        except ImportError as e:
+            print(f"Error: could not import required module — {e}")
+            return 1
 
-    print(f"\n{'='*60}")
-    print(f"LRC PULLER")
-    print(f"{'='*60}")
+    print("\n" + "=" * 60)
+    print("LRC PULLER")
+    print("=" * 60)
     print(f"Audio dir:     {audio_dir}")
     print(f"Output dir:    {output_dir}")
     print(f"Threads:       {search_threads} search / {download_threads} download")
     print(f"Overwrite:     {overwrite}")
     print(f"Struct mirror: {preserve_structure}")
-    print(f"Mutagen:       {'yes' if MUTAGEN_AVAILABLE else 'no (pip install mutagen)'}")
-    print(f"Syncedlyrics:  {'yes' if SYNCEDLYRICS_AVAILABLE else 'no (pip install syncedlyrics)'}")
-    print(f"{'='*60}")
+    print(
+        f"Mutagen:       {'yes' if MUTAGEN_AVAILABLE else 'no (pip install mutagen)'}"
+    )
+    print(
+        f"Syncedlyrics:  {'yes' if SYNCEDLYRICS_AVAILABLE else 'no (pip install syncedlyrics)'}"
+    )
+    print(f"{'=' * 60}")
 
     print("\nScanning for audio files...")
     audio_files = get_audio_files(audio_dir)
@@ -153,16 +196,15 @@ def main():
 
     with ThreadPoolExecutor(max_workers=search_threads) as executor:
         futures = {
-            executor.submit(search_song, song, prefer_synced): song
-            for song in songs
+            executor.submit(search_song, song, prefer_synced): song for song in songs
         }
         for future in as_completed(futures):
             result = future.result()
             processed += 1
 
-            if result['status'] == 'found':
+            if result["status"] == "found":
                 found_results.append(result)
-            elif result['status'] == 'error':
+            elif result["status"] == "error":
                 errors += 1
                 not_found += 1
             else:
@@ -180,59 +222,63 @@ def main():
         return 0
 
     if args.yes:
-        confirm = 'y'
+        confirm = "y"
     else:
         try:
-            confirm = input(
-                f"\nDownload {len(found_results)} lyrics files? (y/n): "
-            ).strip().lower()
+            confirm = (
+                input(f"\nDownload {len(found_results)} lyrics files? (y/n): ")
+                .strip()
+                .lower()
+            )
         except KeyboardInterrupt:
             print("\nCancelled")
             return 0
 
-        if confirm != 'y':
+        if confirm != "y":
             print("Cancelled")
             return 0
 
     # Save phase (content already in memory)
     print(f"\nSaving lyrics ({download_threads} threads)...")
-    tally = {'success': 0, 'error': 0}
-    sources = {'lrclib': 0, 'syncedlyrics': 0}
+    tally = {"success": 0, "error": 0}
+    sources = {"lrclib": 0, "syncedlyrics": 0}
 
     def _save_result(search_result):
-        filepath, _ = search_result['song']
-        out_path = resolve_output_path(filepath, audio_dir, output_dir, preserve_structure)
-        ok = save_lyrics(search_result['content'], out_path)
+        filepath, _ = search_result["song"]
+        out_path = resolve_output_path(
+            filepath, audio_dir, output_dir, preserve_structure
+        )
+        ok = save_lyrics(search_result["content"], out_path)
         return {
-            'file': filepath.name,
-            'status': 'success' if ok else 'error',
-            'source': search_result.get('source', 'lrclib'),
+            "file": filepath.name,
+            "status": "success" if ok else "error",
+            "source": search_result.get("source", "lrclib"),
         }
 
     with ThreadPoolExecutor(max_workers=download_threads) as executor:
         futures = {executor.submit(_save_result, r): r for r in found_results}
         for i, future in enumerate(as_completed(futures), 1):
             result = future.result()
-            status = result['status']
+            status = result["status"]
             tally[status] = tally.get(status, 0) + 1
-            if status == 'success':
-                sources[result['source']] = sources.get(result['source'], 0) + 1
+            if status == "success":
+                sources[result["source"]] = sources.get(result["source"], 0) + 1
             print(f"  [{i}/{len(found_results)}] {result['file']}: {status}")
 
-    print(f"\n{'='*60}")
-    print(f"Done!")
+    print("\n" + "=" * 60)
+    print("Done!")
     print(f"  ✓ Saved:   {tally['success']}")
-    if sources.get('lrclib'):
+    if sources.get("lrclib"):
         print(f"      lrclib:       {sources['lrclib']}")
-    if sources.get('syncedlyrics'):
+    if sources.get("syncedlyrics"):
         print(f"      syncedlyrics: {sources['syncedlyrics']}")
-    if tally.get('error'):
+    if tally.get("error"):
         print(f"  ✗ Errors:  {tally['error']}")
     print(f"\nOutput: {output_dir}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

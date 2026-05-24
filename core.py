@@ -1,6 +1,7 @@
 """
 Shared logic for lrc-tools TUI and CLI helpers.
 """
+
 from __future__ import annotations
 
 import json
@@ -8,9 +9,10 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterator
+from typing import Any, Callable, Iterator
 
 # XDG (aligned with setup.sh)
 XDG_CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
@@ -24,6 +26,10 @@ STATE_FILE = CONFIG_DIR / ".setup_done"
 BIN_DIR = Path.home() / ".local" / "bin"
 
 AUDIO_EXTENSIONS = {".mp3", ".flac", ".ogg", ".wav", ".m4a", ".opus", ".aac", ".wma"}
+_COUNT_CACHE: dict[tuple[str, str], tuple[float, int]] = {}
+_DEP_CACHE: tuple[float, list[Dependency]] | None = None
+_COUNT_CACHE_TTL = 8.0
+_DEP_CACHE_TTL = 30.0
 
 
 def repo_root() -> Path | None:
@@ -103,21 +109,38 @@ def ensure_lyrics_dirs() -> None:
     LYRICS_PROCESSED.mkdir(parents=True, exist_ok=True)
 
 
+def _cached_count(key: tuple[str, str], compute: Callable[[], int]) -> int:
+    cached = _COUNT_CACHE.get(key)
+    now = time.monotonic()
+    if cached and (now - cached[0]) < _COUNT_CACHE_TTL:
+        return cached[1]
+    value = compute()
+    _COUNT_CACHE[key] = (now, value)
+    return value
+
+
 def count_audio(directory: Path) -> int:
     if not directory.is_dir():
         return 0
-    n = 0
-    for root, _, files in os.walk(directory):
-        for name in files:
-            if Path(name).suffix.lower() in AUDIO_EXTENSIONS:
-                n += 1
-    return n
+
+    def _compute() -> int:
+        total = 0
+        for _root, _dirs, files in os.walk(directory):
+            for name in files:
+                if Path(name).suffix.lower() in AUDIO_EXTENSIONS:
+                    total += 1
+        return total
+
+    return _cached_count(("audio", str(directory.resolve())), _compute)
 
 
 def count_files(directory: Path, pattern: str) -> int:
     if not directory.is_dir():
         return 0
-    return sum(1 for _ in directory.rglob(pattern))
+    return _cached_count(
+        (f"files:{pattern}", str(directory.resolve())),
+        lambda: sum(1 for _ in directory.rglob(pattern)),
+    )
 
 
 def command_exists(name: str) -> bool:
@@ -141,44 +164,104 @@ def textual_available() -> bool:
 
 
 def scan_dependencies() -> list[Dependency]:
+    global _DEP_CACHE
+
+    now = time.monotonic()
+    if _DEP_CACHE and (now - _DEP_CACHE[0]) < _DEP_CACHE_TTL:
+        return list(_DEP_CACHE[1])
+
+    spotdl_install_cmd = (
+        ["pipx", "install", "spotdl"] if command_exists("pipx") else None
+    )
     deps = [
         Dependency(
-            "playerctl", "playerctl", command_exists("playerctl"), True,
+            "playerctl",
+            "playerctl",
+            command_exists("playerctl"),
+            True,
             "sudo pacman -S playerctl",
             ["sudo", "pacman", "-S", "--needed", "playerctl"],
         ),
         Dependency(
-            "ffmpeg / ffprobe", "ffmpeg", command_exists("ffprobe"), True,
+            "ffmpeg / ffprobe",
+            "ffmpeg",
+            command_exists("ffprobe"),
+            True,
             "sudo pacman -S ffmpeg",
             ["sudo", "pacman", "-S", "--needed", "ffmpeg"],
         ),
         Dependency(
-            "PyYAML", "yaml", python_importable("yaml"), True,
+            "PyYAML",
+            "yaml",
+            python_importable("yaml"),
+            True,
             "sudo pacman -S python-pyyaml",
             ["sudo", "pacman", "-S", "--needed", "python-pyyaml"],
         ),
         Dependency(
-            "mutagen", "mutagen", python_importable("mutagen"), False,
+            "mutagen",
+            "mutagen",
+            python_importable("mutagen"),
+            False,
             "sudo pacman -S python-mutagen",
             ["sudo", "pacman", "-S", "--needed", "python-mutagen"],
         ),
         Dependency(
-            "syncedlyrics", "syncedlyrics", python_importable("syncedlyrics"), False,
+            "syncedlyrics",
+            "syncedlyrics",
+            python_importable("syncedlyrics"),
+            False,
             f"{sys.executable} -m pip install syncedlyrics --break-system-packages",
-            [sys.executable, "-m", "pip", "install", "syncedlyrics", "--break-system-packages"],
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "syncedlyrics",
+                "--break-system-packages",
+            ],
         ),
         Dependency(
-            "librosa (opcional)", "librosa", python_importable("librosa"), False,
+            "librosa (opcional)",
+            "librosa",
+            python_importable("librosa"),
+            False,
             f"{sys.executable} -m pip install librosa --break-system-packages",
-            [sys.executable, "-m", "pip", "install", "librosa", "--break-system-packages"],
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "librosa",
+                "--break-system-packages",
+            ],
         ),
         Dependency(
-            "textual (TUI)", "textual", textual_available(), True,
+            "textual (TUI)",
+            "textual",
+            textual_available(),
+            True,
             f"{sys.executable} -m pip install textual --break-system-packages",
-            [sys.executable, "-m", "pip", "install", "textual", "--break-system-packages"],
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "textual",
+                "--break-system-packages",
+            ],
+        ),
+        Dependency(
+            "spotdl (descargador)",
+            "spotdl",
+            command_exists("spotdl"),
+            False,
+            "pipx install spotdl  # recomendado",
+            spotdl_install_cmd,
         ),
     ]
-    return deps
+    _DEP_CACHE = (now, deps)
+    return list(deps)
 
 
 def critical_deps_ok(*, include_tui: bool = False) -> bool:
@@ -307,6 +390,20 @@ def validate_music_dir(path: Path) -> tuple[bool, str]:
     return True, "ok"
 
 
+def download_music_dir() -> Path:
+    path = Path.home() / "Music"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def spotdl_cmd(url: str) -> list[str]:
+    clean_url = url.strip()
+    if not clean_url:
+        raise ValueError("Ingresá un link válido para descargar")
+    target = download_music_dir()
+    return ["spotdl", "download", clean_url, "--output", str(target)]
+
+
 def music_dir_candidates() -> list[Path]:
     """Common music folder locations for the directory picker."""
     raw = [
@@ -380,11 +477,16 @@ def is_first_run() -> bool:
 def fetch_cmd(state: AppState) -> list[str]:
     return [
         lrc_tool_cmd("lrc-fetch"),
-        "--audio-dir", str(state.music_dir),
-        "--output-dir", str(state.lyrics_raw),
-        "--config", str(state.config),
-        "--search-threads", "4",
-        "--download-threads", "4",
+        "--audio-dir",
+        str(state.music_dir),
+        "--output-dir",
+        str(state.lyrics_raw),
+        "--config",
+        str(state.config),
+        "--search-threads",
+        "4",
+        "--download-threads",
+        "4",
         "-y",
     ]
 
@@ -392,10 +494,14 @@ def fetch_cmd(state: AppState) -> list[str]:
 def process_cmd(state: AppState) -> list[str]:
     return [
         lrc_tool_cmd("lrc-processor"),
-        "--lrc-dir", str(state.lyrics_raw),
-        "--audio-dir", str(state.music_dir),
-        "--output-dir", str(state.lyrics_processed),
-        "--config", str(state.config),
+        "--lrc-dir",
+        str(state.lyrics_raw),
+        "--audio-dir",
+        str(state.music_dir),
+        "--output-dir",
+        str(state.lyrics_processed),
+        "--config",
+        str(state.config),
         "--wlrc",
     ]
 
@@ -426,10 +532,13 @@ def vis_cmd(
 ) -> list[str]:
     cmd = [
         lrc_tool_cmd("lrc-vis"),
-        "--lrc-dir", str(state.lyrics_processed),
+        "--lrc-dir",
+        str(state.lyrics_processed),
         "--wlrc",
-        "--config", str(state.config),
-        "--audio-dir", str(state.music_dir),
+        "--config",
+        str(state.config),
+        "--audio-dir",
+        str(state.music_dir),
     ]
     if lrc_file is not None:
         cmd.extend(["--lrc-file", str(lrc_file.resolve()), "--pin"])
@@ -440,7 +549,7 @@ def vis_cmd(
     return cmd
 
 
-def system_stats(state: AppState) -> dict[str, str | int]:
+def system_stats(state: AppState) -> dict[str, str | int | bool]:
     ensure_lyrics_dirs()
     return {
         "music_dir": str(state.music_dir),
@@ -450,4 +559,13 @@ def system_stats(state: AppState) -> dict[str, str | int]:
         "tools": tools_installed(),
         "config": CONFIG_FILE.is_file(),
         "deps_ok": critical_deps_ok(include_tui=True),
+    }
+
+
+def sidebar_snapshot(state: AppState) -> dict[str, Any]:
+    stats = system_stats(state)
+    deps = scan_dependencies()
+    return {
+        "stats": stats,
+        "missing": [d.label for d in deps if not d.present and d.critical],
     }

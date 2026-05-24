@@ -20,10 +20,7 @@ from textual.widgets import (
     Static,
 )
 
-try:
-    from lrc_tools import core
-except ImportError:
-    import core
+import core
 
 
 class DirectoryBrowserScreen(Screen):
