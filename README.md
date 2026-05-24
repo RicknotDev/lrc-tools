@@ -75,20 +75,6 @@ Handy development commands:
 - [`docs/file-formats.md`](docs/file-formats.md)
 - [`docs/troubleshooting.md`](docs/troubleshooting.md)
 
-## GitHub visibility suggestions
-
-### Topics
-
-`lyrics`, `lrc`, `terminal`, `tui`, `mpris`, `playerctl`, `music`, `python`, `cli`, `syncedlyrics`, `lrclib`, `linux`, `terminal-ui`, `ascii-art`, `karaoke`, `lyrics-viewer`, `music-tools`
-
-### Repository description
-
-Terminal synced lyrics viewer for Linux with MPRIS/playerctl support, LRCLIB fetching, and a Textual TUI.
-
-### Social preview idea
-
-Use an OG image showing a dark Linux terminal with the ASCII logo, a large lyric line in progress, a progress bar, and small labels for `MPRIS`, `playerctl`, and `.wlrc`.
-
 <details>
 <summary>🇪🇸 Leer en español</summary>
 
