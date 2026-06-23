@@ -3,10 +3,24 @@
 from __future__ import annotations
 
 import importlib
+import io
+import os
 import sys
 from types import ModuleType
 
 __version__ = "0.3.0"
+
+if os.name == "nt" and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True,
+        )
+        sys.stderr = io.TextIOWrapper(
+            sys.stderr.buffer, encoding="utf-8", errors="replace", line_buffering=True,
+        )
 __all__ = [
     "__version__", "check_optional", "print_missing_optional",
     "AppState", "Dependency", "TrackEntry",
