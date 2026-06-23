@@ -115,6 +115,6 @@ class DownloaderScreen(Screen):
                 if await proc.wait() == 0:
                     return True
             except FileNotFoundError:
-                log.write(f"[red]No se encontró: {cmd[0]}[/]")
+                log.write("[red]spotdl no encontrado — la descarga falló[/]")
                 return False
         return False
