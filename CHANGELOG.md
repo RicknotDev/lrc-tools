@@ -19,8 +19,15 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - `rich>=13.0` promoted to base dependency
-- `save_lyrics()` now creates `.bak` before overwriting existing files
+- `save_lyrics()` now creates `.bak` before overwriting existing files; skips backup if content unchanged
 - Version bumped to 0.3.0
+
+### Fixed
+- `prompt_threads()`: `if default:` -> `if default is not None:` (broke `--search-threads 0`)
+- `display.py` `render_block_text()`: non-ASCII characters (é, ñ, ü) now render as base letters
+- `fonts.py`: added `FALLBACK_CHARS` map for accented character support
+- `config.py`: guarded `import yaml` with try/except for missing PyYAML
+- Cross-platform: 15 issues fixed across audio_player, player, display, install scripts, Makefile
 
 ## [0.2.0] — 2026-06-22
 
