@@ -48,10 +48,10 @@ jobs:
       - name: Verify imports
         run: |
           python -c "
-from lrc_tools import __version__
-from lrc_tools.core import IS_LINUX, IS_MACOS, IS_WINDOWS
-from lrc_tools.parser import parse_lrc
-from lrc_tools.processor import process_long_phrases
-from lrc_tools.puller import extract_metadata_from_filename
-print(f'OK: lrc-tools v{__version__} on {__import__(\"sys\").platform}')
-"
+          from lrc_tools import __version__
+          from lrc_tools.core import IS_LINUX, IS_MACOS, IS_WINDOWS
+          from lrc_tools.parser import parse_lrc
+          from lrc_tools.processor import process_long_phrases
+          from lrc_tools.puller import extract_metadata_from_filename
+          print(f'OK: lrc-tools v{__version__} on {__import__(\"sys\").platform}')
+          "
