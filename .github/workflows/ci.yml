@@ -34,7 +34,7 @@ jobs:
       - name: Install system deps (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install ffmpeg playerctl
+          brew install ffmpeg
 
       - name: Install package
         run: |
