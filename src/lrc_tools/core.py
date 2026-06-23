@@ -165,7 +165,34 @@ def count_files(directory: Path, pattern: str) -> int:
 
 
 def command_exists(name: str) -> bool:
-    return shutil.which(name) is not None
+    if shutil.which(name) is not None:
+        return True
+    if IS_WINDOWS:
+        scripts_dir = Path(sysconfig.get_path("scripts"))
+        if (scripts_dir / name).is_file() or (scripts_dir / f"{name}.exe").is_file():
+            return True
+        user_base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming")) / "Python"
+        for site in user_base.glob("*/Scripts"):
+            if (site / name).is_file() or (site / f"{name}.exe").is_file():
+                return True
+    return False
+
+
+def find_command(name: str) -> str:
+    path = shutil.which(name)
+    if path:
+        return path
+    if IS_WINDOWS:
+        scripts_dir = Path(sysconfig.get_path("scripts"))
+        for candidate in [scripts_dir / name, scripts_dir / f"{name}.exe"]:
+            if candidate.is_file():
+                return str(candidate)
+        user_base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming")) / "Python"
+        for site in user_base.glob("*/Scripts"):
+            for candidate in [site / name, site / f"{name}.exe"]:
+                if candidate.is_file():
+                    return str(candidate)
+    return name
 
 
 def python_importable(module: str) -> bool:
@@ -443,7 +470,7 @@ def spotdl_cmd(url: str) -> list[str]:
     if not clean_url:
         raise ValueError("Ingresá un link válido para descargar")
     target = download_music_dir()
-    return ["spotdl", "download", clean_url, "--output", str(target)]
+    return [find_command("spotdl"), "download", clean_url, "--output", str(target)]
 
 
 def music_dir_candidates() -> list[Path]:
