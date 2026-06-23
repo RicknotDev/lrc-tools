@@ -8,7 +8,7 @@ import os
 import sys
 from types import ModuleType
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 if os.name == "nt" and hasattr(sys.stdout, "reconfigure"):
     try:
