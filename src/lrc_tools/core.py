@@ -478,10 +478,13 @@ def music_dir_candidates() -> list[Path]:
         Path.home() / "Music",
         Path.home() / "Música",
         Path.home() / "music",
-        Path("/mnt"),
-        Path("/media") / os.environ.get("USER", ""),
+        Path.home() / "Music" / "iTunes",
+        Path.home() / "Music" / "Music",
+        Path.home() / "Music" / "Spotify",
         Path.home() / "Downloads",
     ]
+    if IS_LINUX:
+        raw.extend([Path("/mnt"), Path("/media") / os.environ.get("USER", "")])
     seen: set[Path] = set()
     out: list[Path] = []
     for p in raw:

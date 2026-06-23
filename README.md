@@ -70,6 +70,14 @@ pip install "lrc-tools[full]"
 > ```
 > Then restart your terminal.
 
+> **macOS:** Works out of the box on Intel and Apple Silicon. Install dependencies via Homebrew:
+> ```bash
+> brew install ffmpeg
+> # Optional: for audio playback in the visualizer
+> brew install mpv
+> ```
+> The visualizer auto-detects Music.app and Spotify via AppleScript.
+
 ### Binary release
 
 Download a standalone executable from the [Releases page](https://github.com/RicknotDev/lrc-tools/releases) — no Python needed.
@@ -243,7 +251,7 @@ Or from the TUI: `lrc-tools` → Configure paths → Fetch → Process → Visua
 | **LRCLIB API rate limits** | Too many requests may return 429. Reduce `--search-threads`. |
 | **syncedlyrics provider** | May return unsynced lyrics. Always check output. |
 | **mpv on Windows** | IPC via `AF_UNIX` is not supported. Falls back to ffplay. |
-| **playerctl** | Linux-only. On macOS/Windows visualizer uses mpv/ffplay directly. |
+| **playerctl** | Linux-only. On macOS the visualizer uses AppleScript for Music.app/Spotify auto-detection. |
 | **ffplay position drift** | Position is estimated via monotonic time, not actual playback position. |
 | **Large libraries** | Fetching 1000+ files may take several minutes. Use `--dry-run` first. |
 

@@ -111,8 +111,10 @@ python3 -m venv .venv && source .venv/bin/activate && pip install lrc-tools
 
 ## macOS-specific
 
-- `playerctl` may not work with Apple Music. Use `lrc-vis` with `--lrc-file` and `--play` + mpv.
-- Install via Homebrew: `brew install playerctl ffmpeg`
+- The visualizer auto-detects Music.app and Spotify via AppleScript (no `playerctl` needed).
+- Install dependencies: `brew install ffmpeg mpv`
+- If auto-detection doesn't work, use `lrc-vis` with `--lrc-file` and `--play` + mpv.
+- On Apple Silicon, ensure you're using the ARM64 build of Python (`python --version` should show 3.12+).
 
 ## Still stuck?
 

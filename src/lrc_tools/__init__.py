@@ -42,14 +42,20 @@ def print_missing_optional(
         message += f" — needed for {description}."
     print(message, file=sys.stderr)
     print(f"  Install it with: {install_hint}", file=sys.stderr)
-    pacman_pkg = {
+    _IS_MACOS = sys.platform == "darwin"
+    _IS_LINUX = sys.platform.startswith("linux")
+    pkg_map = {
         "textual": "python-textual",
         "librosa": "python-librosa",
         "mutagen": "python-mutagen",
         "syncedlyrics": "python-syncedlyrics",
-    }.get(package_name)
-    if pacman_pkg:
-        print(f"  Or: sudo pacman -S {pacman_pkg}", file=sys.stderr)
+    }
+    pkg = pkg_map.get(package_name)
+    if pkg:
+        if _IS_MACOS:
+            print(f"  Or: brew install {package_name}", file=sys.stderr)
+        elif _IS_LINUX:
+            print(f"  Or: sudo pacman -S {pkg}", file=sys.stderr)
 
 
 def check_optional(
