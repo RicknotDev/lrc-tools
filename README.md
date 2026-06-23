@@ -61,6 +61,14 @@ pip install "lrc-tools[full]"
 ```
 
 > Windows: works best in PowerShell or Windows Terminal. For best experience install `ffmpeg` via `winget install ffmpeg`.
+>
+> **Note:** If `lrc-tools` commands are not found after `pip install --user`, the Python `Scripts` directory is not in your PATH. The install script (`install.ps1`) adds it automatically. Otherwise run:
+> ```powershell
+> $scripts = python -c "import sysconfig; print(sysconfig.get_path('scripts'))"
+> $env:Path += ";$scripts"
+> [Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path","User") + ";$scripts", "User")
+> ```
+> Then restart your terminal.
 
 ### Binary release
 

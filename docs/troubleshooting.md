@@ -74,13 +74,20 @@ lrc-vis --lrc-dir ./out --wlrc --lrc-file ./out/song.wlrc
 
 ## Command not found after install
 
-**Fix:** Add `~/.local/bin` to your shell `PATH`:
+**Fix:** Add the Python scripts directory to your shell `PATH`.
 
+**Linux/macOS:**
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 ```
-
 Add this line to your `~/.bashrc`, `~/.zshrc`, or equivalent.
+
+**Windows (PowerShell):**
+```powershell
+$scripts = python -c "import sysconfig; print(sysconfig.get_path('scripts'))"
+[Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path","User") + ";$scripts", "User")
+```
+Then restart your terminal. The `install.ps1` script does this automatically.
 
 ## Permission denied (Linux)
 

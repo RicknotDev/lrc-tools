@@ -93,22 +93,28 @@ class DownloaderScreen(Screen):
         if core.command_exists("pipx"):
             cmds.append(["pipx", "install", "spotdl"])
         cmds.append([sys.executable, "-m", "pip", "install", "spotdl", "--user"])
+        if core.IS_WINDOWS:
+            cmds.append([sys.executable, "-m", "pip", "install", "spotdl"])
         return cmds
 
     async def _stream_cmd(self, log: RichLog, cmds: list[list[str]]) -> bool:
         for cmd in cmds:
             log.write(f"[dim]{' '.join(cmd)}[/]")
-            proc = await asyncio.create_subprocess_exec(
-                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,
-            )
-            assert proc.stdout
-            while True:
-                line = await proc.stdout.readline()
-                if not line:
-                    break
-                text = line.decode(errors="replace").rstrip()
-                if text:
-                    log.write(text)
-            if await proc.wait() == 0:
-                return True
+            try:
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,
+                )
+                assert proc.stdout
+                while True:
+                    line = await proc.stdout.readline()
+                    if not line:
+                        break
+                    text = line.decode(errors="replace").rstrip()
+                    if text:
+                        log.write(text)
+                if await proc.wait() == 0:
+                    return True
+            except FileNotFoundError:
+                log.write(f"[red]No se encontró: {cmd[0]}[/]")
+                return False
         return False

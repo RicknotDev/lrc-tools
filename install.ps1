@@ -45,6 +45,19 @@ try {
     exit 1
 }
 
+# Add Scripts directory to user PATH if not already present
+$scriptsDir = & python -c "import sysconfig; print(sysconfig.get_path('scripts'))"
+if ($scriptsDir -and (Test-Path $scriptsDir)) {
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    if ($userPath -notlike "*$scriptsDir*") {
+        Write-Host "Adding $scriptsDir to user PATH..." -ForegroundColor Yellow
+        [Environment]::SetEnvironmentVariable("Path", $userPath + ";" + $scriptsDir, "User")
+        Write-Host "  Added to PATH. Restart your terminal to use commands directly." -ForegroundColor Green
+    } else {
+        Write-Host "Scripts directory already in PATH." -ForegroundColor Green
+    }
+}
+
 Write-Host ""
 Write-Host "Available commands:" -ForegroundColor Cyan
 Write-Host "  lrc-tools       # Open the TUI"
