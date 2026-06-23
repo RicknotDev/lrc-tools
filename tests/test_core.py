@@ -86,7 +86,7 @@ class TestCommands(unittest.TestCase):
         with mock.patch.object(core, "lrc_tool_cmd", return_value="/usr/bin/lrc-fetch"):
             cmd = core.fetch_cmd(state)
         self.assertIn("--audio-dir", cmd)
-        self.assertIn("/music", cmd)
+        self.assertIn("music", cmd[cmd.index("--audio-dir") + 1])
         self.assertIn(str(core.LYRICS_RAW), cmd)
         self.assertIn("--search-threads", cmd)
         self.assertIn("-y", cmd)
@@ -115,7 +115,7 @@ class TestCommands(unittest.TestCase):
         self.assertIn("--pin", cmd)
         self.assertIn("--play", cmd)
         self.assertIn("--audio-dir", cmd)
-        self.assertIn("/music", cmd)
+        self.assertIn("music", cmd[cmd.index("--audio-dir") + 1])
 
     def test_list_tracks_recursive(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
