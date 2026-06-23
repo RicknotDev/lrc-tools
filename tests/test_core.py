@@ -1,18 +1,14 @@
 """Tests for core.py (stdlib only, no network)."""
+
 from __future__ import annotations
 
-import json
 import os
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
-# Import from repo root
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
-import core  # noqa: E402
+from lrc_tools import core
 
 
 class TestAppState(unittest.TestCase):
@@ -141,9 +137,7 @@ class TestStateFile(unittest.TestCase):
             cfg = Path(tmp) / "lrc-tools"
             cfg.mkdir()
             state_path = cfg / ".setup_done"
-            with mock.patch.object(core, "CONFIG_DIR", cfg), mock.patch.object(
-                core, "STATE_FILE", state_path
-            ):
+            with mock.patch.object(core, "CONFIG_DIR", cfg), mock.patch.object(core, "STATE_FILE", state_path):
                 state = core.AppState(music_dir=Path("/my/music"))
                 core.save_state(state)
                 loaded = core.load_state()

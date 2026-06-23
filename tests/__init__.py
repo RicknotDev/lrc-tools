@@ -1,1 +1,1 @@
-# lrc-tools test suite
+"""lrc-tools test suite."""

@@ -1,19 +1,23 @@
-PYTHON ?= python3
+# Detect Python interpreter (python3 on Unix, python on Windows)
+PYTHON ?= $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null || echo python3)
 PIP := $(PYTHON) -m pip
 PACKAGE := .
-FULL_EXTRAS := .[full,timing]
+FULL_EXTRAS := .[full]
+UNAME := $(shell uname -s)
 
-.PHONY: help install install-minimal reinstall uninstall test build clean
+.PHONY: help install install-minimal reinstall uninstall test build clean verify binary
 
 help:
 	@echo "Available targets:"
-	@echo "  make install          Install editable package with full default dependencies"
-	@echo "  make install-minimal  Install editable package with base dependencies only"
-	@echo "  make reinstall        Reinstall editable package with full dependencies"
-	@echo "  make uninstall        Uninstall lrc-tools"
+	@echo "  make install          Install with full dependencies"
+	@echo "  make install-minimal  Install base dependencies only"
+	@echo "  make reinstall        Reinstall"
+	@echo "  make uninstall        Uninstall"
 	@echo "  make test             Run test suite"
-	@echo "  make build            Build wheel and sdist"
-	@echo "  make clean            Remove build artifacts"
+	@echo "  make build            Build wheel + sdist"
+	@echo "  make binary           Build standalone binary (PyInstaller)"
+	@echo "  make verify           Post-install verification"
+	@echo "  make clean            Remove artifacts"
 
 install:
 	$(PIP) install --user -e '$(FULL_EXTRAS)'
@@ -34,6 +38,13 @@ test:
 build:
 	$(PIP) install --upgrade build
 	$(PYTHON) -m build
+
+binary:
+	$(PIP) install pyinstaller
+	$(PYTHON) scripts/build_binary.py
+
+verify:
+	$(PYTHON) scripts/verify_install.py
 
 clean:
 	rm -rf build dist *.egg-info .pytest_cache .mypy_cache

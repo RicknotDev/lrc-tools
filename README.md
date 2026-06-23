@@ -1,6 +1,6 @@
 # lrc-tools
 
-```/dev/null/logo.txt#L1-5
+```
   _      ____   ___    _____           _
  | |    |___ \ / _ \  |_   _|_ _  ___| |_
  | |      __) | | | |   | |/ _` |/ _ \ __|
@@ -8,254 +8,128 @@
  |_____|_____| \___/    |_|\__,_|\___|\__|
 ```
 
-A Linux terminal app for fetching, processing, and displaying synced lyrics with a polished Textual TUI.
+Terminal synced lyrics toolkit — fetch, process, and visualize `.lrc` lyrics from your terminal.
 
+[![CI](https://img.shields.io/github/actions/workflow/status/RicknotDev/lrc-tools/ci.yml?branch=main&label=CI)](https://github.com/RicknotDev/lrc-tools/actions)
+[![Lint](https://img.shields.io/github/actions/workflow/status/RicknotDev/lrc-tools/lint.yml?branch=main&label=Lint)](https://github.com/RicknotDev/lrc-tools/actions)
+[![PyPI](https://img.shields.io/pypi/v/lrc-tools)](https://pypi.org/project/lrc-tools/)
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Linux-informational)](#)
-[![Release](https://img.shields.io/github/v/release/RicknotDev/lrc-tools)](https://github.com/RicknotDev/lrc-tools/releases)
+[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS%20%7C%20windows-informational)](#)
 
 ## What is this?
 
-`lrc-tools` helps you do three things from the terminal:
+Three operations from the terminal:
 
-1. **Fetch** synced lyrics for the songs in your library.
-2. **Process** those lyrics into a word-level format for smoother playback.
-3. **Visualize** the lyrics in real time while music is playing.
+1. **Fetch** synced lyrics from [LRCLIB](https://lrclib.net) for your music library
+2. **Process** `.lrc` into word-level `.wlrc` with phrase splitting and onset detection
+3. **Visualize** lyrics in real time while music is playing (MPRIS / mpv / ffplay)
 
-If you are new, the easiest path is:
+New? Run `lrc-tools`, pick your music folder, fetch → process → enjoy.
 
-- install the app
-- open `lrc-tools`
-- choose your music folder
-- run fetch
-- run process
-- launch the visualizer
+## Quick install
 
-## Main commands
-
-| Command | What it does | Typical use |
-|---|---|---|
-| `lrc-tools` / `lt` | Opens the interactive TUI | Best starting point for most users |
-| `lrc-fetch` | Downloads `.lrc` lyrics | Build your lyrics library |
-| `lrc-processor` | Converts `.lrc` into `.wlrc` | Better word-by-word playback |
-| `lrc-vis` | Shows synced lyrics in the terminal | Manual visualizer launch |
-
-## Installation
-
-### Option A — easiest local install
-
-From a clone of the repo:
-
-- `make install`
-
-This installs the app in editable mode with the default dependency set.
-
-### Option B — convenience script
-
-- `bash setup.sh`
-
-This does the same install in a simple wrapper.
-
-### Option C — install directly from GitHub
-
-- `python3 -m pip install --user "git+https://github.com/RicknotDev/lrc-tools#egg=lrc-tools[full,timing]"`
-
-## Requirements
-
-You need:
-
-- Linux
-- Python 3.12+
-- `playerctl`
-- `ffmpeg` / `ffprobe`
-
-The Python install already includes these runtime packages by default:
-
-- `PyYAML`
-- `textual`
-- `mutagen`
-- `syncedlyrics`
-- `librosa`
-
-### Arch Linux example
-
-```/dev/null/install-arch.sh#L1-2
-sudo pacman -S playerctl ffmpeg
-python3 -m pip install --user "git+https://github.com/RicknotDev/lrc-tools#egg=lrc-tools[full,timing]"
+```bash
+pip install --user lrc-tools
+# Or with extras:
+pip install --user "lrc-tools[full]"   # +mutagen +syncedlyrics +textual
 ```
 
-## First-time setup
+Or download a binary from [Releases](https://github.com/RicknotDev/lrc-tools/releases).
 
-### 1. Make sure your binaries are in `PATH`
+**System requirements:** Python 3.12+, `ffmpeg`/`ffprobe`, `playerctl` (Linux only).
 
-```/dev/null/path.sh#L1-1
-export PATH="$HOME/.local/bin:$PATH"
+## Commands
+
+| Command | What it does |
+|---------|-------------|
+| `lrc-tools` / `lt` | Interactive TUI (or simple menu if Textual is missing) |
+| `lrc-fetch` | Batch download `.lrc` lyrics from LRCLIB |
+| `lrc-processor` | Split phrases, convert `.lrc` → `.wlrc` |
+| `lrc-vis` | Real-time lyric visualizer in the terminal |
+
+### CLI examples
+
+```bash
+# Fetch lyrics for all songs in ~/Music
+lrc-fetch --audio-dir ~/Music --output-dir ~/.local/share/lrc-tools/lyrics/raw
+
+# Process to word-level with custom split settings
+lrc-processor --lrc-dir ./raw --audio-dir ./music --output-dir ./out --wlrc \
+  --max-phrase-duration 3.0 --max-words 10
+
+# Visualize with auto-match from media player
+lrc-vis --lrc-dir ~/.local/share/lrc-tools/lyrics/processed --wlrc
+
+# Validate an LRC file
+python3 -c "from lrc_tools.parser import validate_lrc; print(validate_lrc('file.lrc'))"
+
+# Export LRC to SRT subtitles
+python3 -c "from lrc_tools.exporters import export_srt; export_srt('file.lrc', 'file.srt')"
 ```
 
-### 2. Open the TUI
+See `--help` on any command for full options.
 
-```/dev/null/open-tui.sh#L1-1
-lrc-tools
+## Default paths
+
+| What | Path |
+|------|------|
+| Raw lyrics | `~/.local/share/lrc-tools/lyrics/raw` |
+| Processed lyrics | `~/.local/share/lrc-tools/lyrics/processed` |
+| Config | `~/.config/lrc-tools/config.yaml` |
+
+On macOS: `~/Library/Application Support/` and `~/Library/Preferences/`.  
+On Windows: `%LOCALAPPDATA%` and `%APPDATA%`.
+
+## Workflow
+
+```
+Audio files  ──→  lrc-fetch  ──→  .lrc (raw)  ──→  lrc-processor  ──→  .wlrc  ──→  lrc-vis
 ```
 
-### 3. In the interface
+Or from the TUI: `lrc-tools` → Configure paths → Fetch → Process → Visualize.
 
-Follow this order:
+## Features
 
-1. **Configure paths**
-2. **Fetch lyrics**
-3. **Process lyrics**
-4. **Launch visualizer**
+| Feature | Status |
+|---------|--------|
+| Fetch lyrics from LRCLIB | ✅ |
+| syncedlyrics fallback provider | ✅ |
+| Phrase splitting (commas, duration, word count) | ✅ |
+| Word-level WLRC format | ✅ |
+| Onset detection via librosa | ✅ |
+| Real-time visualizer (playerctl / mpv / ffplay) | ✅ |
+| Textual TUI | ✅ |
+| CLI with rich progress bars and colors | ✅ |
+| Cross-platform (Linux / macOS / Windows) | ✅ |
+| LRC validation and repair | ✅ |
+| Timestamp offset (shift all timestamps) | ✅ |
+| Merge / split LRC files | ✅ |
+| Export to SRT subtitles | ✅ |
+| Export/import JSON | ✅ |
+| Dry-run mode | ✅ |
+| Auto-backup before overwrite | ✅ |
+| PyInstaller binaries | ✅ |
+| Custom ASCII fonts | ✅ |
 
-## Typical workflow
+## Docs
 
-### Interactive workflow
+- [Configuration](docs/configuration.md)
+- [File formats](docs/file-formats.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [API reference](docs/api.md)
 
-```/dev/null/workflow-tui.sh#L1-1
-lrc-tools
+## Development
+
+```bash
+git clone https://github.com/RicknotDev/lrc-tools
+cd lrc-tools
+pip install -e ".[full]"
+python -m unittest discover -s tests
 ```
 
-Inside the TUI:
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-- choose your music folder
-- fetch lyrics into the raw lyrics directory
-- process them into `.wlrc`
-- select a song and launch the visualizer
+## License
 
-### CLI workflow
-
-```/dev/null/workflow-cli.sh#L1-9
-RAW=~/.local/share/lrc-tools/lyrics/raw
-OUT=~/.local/share/lrc-tools/lyrics/processed
-
-lrc-fetch --audio-dir ~/Music --output-dir "$RAW"
-lrc-processor \
-  --lrc-dir "$RAW" \
-  --audio-dir ~/Music \
-  --output-dir "$OUT" \
-  --wlrc
-lrc-vis --lrc-dir "$OUT" --wlrc
-```
-
-## Where files are stored
-
-By default, `lrc-tools` uses XDG-style paths:
-
-- raw lyrics: `~/.local/share/lrc-tools/lyrics/raw`
-- processed lyrics: `~/.local/share/lrc-tools/lyrics/processed`
-- config: `~/.config/lrc-tools/config.yaml`
-
-## Helpful developer commands
-
-- `make install`
-- `make install-minimal`
-- `make reinstall`
-- `make uninstall`
-- `make test`
-- `make build`
-- `make clean`
-
-## Troubleshooting
-
-### `command not found`
-
-Your shell probably does not include `~/.local/bin` yet.
-
-### TUI does not open
-
-Install the full dependency set again:
-
-```/dev/null/reinstall.sh#L1-1
-make reinstall
-```
-
-### Visualizer does not find the current song
-
-Check:
-
-- `playerctl status`
-- the lyrics exist in the processed directory
-- your filenames and tags are consistent
-
-### Want the full docs?
-
-See:
-
-- [`docs/configuration.md`](docs/configuration.md)
-- [`docs/file-formats.md`](docs/file-formats.md)
-- [`docs/troubleshooting.md`](docs/troubleshooting.md)
-
-<details>
-<summary>🇪🇸 Leer en español</summary>
-
-## Qué es esto
-
-`lrc-tools` es una app de terminal para Linux que permite descargar, procesar y mostrar letras sincronizadas con una TUI más amigable para usuarios nuevos.
-
-## Instalación
-
-### Opción A — instalación local recomendada
-
-- `make install`
-
-### Opción B — wrapper simple
-
-- `bash setup.sh`
-
-### Opción C — instalación desde GitHub
-
-- `python3 -m pip install --user "git+https://github.com/RicknotDev/lrc-tools#egg=lrc-tools[full,timing]"`
-
-## Requisitos
-
-- Linux
-- Python 3.12+
-- `playerctl`
-- `ffmpeg` / `ffprobe`
-
-## Primer uso
-
-1. Ejecutá `lrc-tools`
-2. Configurá la carpeta de música
-3. Descargá letras con **Fetch lyrics**
-4. Procesalas con **Process lyrics**
-5. Abrí el visualizador con **Launch visualizer**
-
-## Flujo típico por CLI
-
-```/dev/null/workflow-cli-es.sh#L1-9
-RAW=~/.local/share/lrc-tools/lyrics/raw
-OUT=~/.local/share/lrc-tools/lyrics/processed
-
-lrc-fetch --audio-dir ~/Music --output-dir "$RAW"
-lrc-processor \
-  --lrc-dir "$RAW" \
-  --audio-dir ~/Music \
-  --output-dir "$OUT" \
-  --wlrc
-lrc-vis --lrc-dir "$OUT" --wlrc
-```
-
-## Rutas por defecto
-
-- letras crudas: `~/.local/share/lrc-tools/lyrics/raw`
-- letras procesadas: `~/.local/share/lrc-tools/lyrics/processed`
-- config: `~/.config/lrc-tools/config.yaml`
-
-## Comandos útiles
-
-- `make install`
-- `make reinstall`
-- `make uninstall`
-- `make test`
-- `make build`
-- `make clean`
-
-## Documentación
-
-- [`docs/configuration.md`](docs/configuration.md)
-- [`docs/file-formats.md`](docs/file-formats.md)
-- [`docs/troubleshooting.md`](docs/troubleshooting.md)
-
-</details>
+MIT

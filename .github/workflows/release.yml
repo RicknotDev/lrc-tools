@@ -10,29 +10,80 @@ permissions:
   id-token: write
 
 jobs:
-  release:
+  sdist:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-          cache-dependency-path: pyproject.toml
-
-      - name: Build distribution artifacts
+      - name: Build sdist + wheel
         run: |
           python -m pip install --upgrade pip build
           python -m build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-sdist
+          path: dist/
+
+  binaries:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: linux-x86_64
+          - os: macos-latest
+            label: macos-x86_64
+          - os: windows-latest
+            label: windows-x86_64
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller
+          python -m pip install -e ".[full]"
+
+      - name: Build binary with PyInstaller
+        run: python scripts/build_binary.py
+
+      - name: Rename binary per platform
+        shell: bash
+        run: |
+          mkdir -p dist-bin
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cp dist/lrc-tools/lrc-tools.exe dist-bin/lrc-tools-${{ matrix.label }}.exe
+          else
+            cp dist/lrc-tools/lrc-tools dist-bin/lrc-tools-${{ matrix.label }}
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.label }}
+          path: dist-bin/
+
+  publish:
+    needs: [sdist, binaries]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: "*-*"
+          merge-multiple: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: |
+            *.tar.gz
+            *.whl
+            lrc-tools-*
           generate_release_notes: true
 
       - name: Publish to PyPI

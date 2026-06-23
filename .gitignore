@@ -30,3 +30,6 @@ Thumbs.db
 config.yaml
 *.lrc
 *.wlrc
+
+# old bin/ wrappers (removed in v0.2.0)
+bin/

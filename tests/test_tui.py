@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
-import sys
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
-
-import core
+from lrc_tools import core
 
 
 @unittest.skipUnless(core.textual_available(), "textual not installed")
 class TestTuiSmoke(unittest.IsolatedAsyncioTestCase):
     async def test_app_mounts_main_menu(self) -> None:
-        from tui.app import LrcToolsApp
+        from lrc_tools.tui.app import LrcToolsApp
 
         app = LrcToolsApp(core.AppState(music_dir=Path.home()))
         async with app.run_test(size=(100, 40)) as pilot:
@@ -24,22 +20,22 @@ class TestTuiSmoke(unittest.IsolatedAsyncioTestCase):
             self.assertIsNotNone(menu)
 
     async def test_confirm_dialog_dismiss(self) -> None:
-        from tui.app import ConfirmDialog, LrcToolsApp
+        from lrc_tools.tui.app import LrcToolsApp
+        from lrc_tools.tui.widgets.confirm_dialog import ConfirmDialog
 
         app = LrcToolsApp()
         async with app.run_test() as pilot:
-            pilot.app.push_screen(ConfirmDialog("¿Probar?"))
+            pilot.app.push_screen(ConfirmDialog("\u00bfProbar?"))
             await pilot.pause()
             await pilot.click("#yes")
-            # screen should dismiss without crash
             await pilot.pause()
 
 
 @unittest.skipUnless(core.textual_available(), "textual not installed")
 class TestDirectoryBrowser(unittest.IsolatedAsyncioTestCase):
     async def test_browser_lists_home(self) -> None:
-        from tui.app import LrcToolsApp
-        from tui.dir_browser import DirectoryBrowserScreen
+        from lrc_tools.tui.app import LrcToolsApp
+        from lrc_tools.tui.dir_browser import DirectoryBrowserScreen
 
         app = LrcToolsApp()
         async with app.run_test() as pilot:

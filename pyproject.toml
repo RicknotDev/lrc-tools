@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lrc-tools"
-version = "0.1.0"
-description = "Terminal synced lyrics toolkit for Linux with CLI tools and a Textual TUI"
+version = "0.3.0"
+description = "Terminal synced lyrics toolkit with CLI tools and a Textual TUI"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
@@ -14,10 +14,7 @@ authors = [
 ]
 dependencies = [
   "PyYAML>=6.0",
-  "mutagen>=1.47",
-  "syncedlyrics>=1.0",
-  "textual>=0.60",
-  "librosa>=0.10"
+  "rich>=13.0",
 ]
 keywords = ["lyrics", "lrc", "terminal", "tui", "mpris", "playerctl", "music", "cli", "python"]
 classifiers = [
@@ -25,7 +22,7 @@ classifiers = [
   "Environment :: Console",
   "Intended Audience :: End Users/Desktop",
   "License :: OSI Approved :: MIT License",
-  "Operating System :: POSIX :: Linux",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -34,21 +31,26 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-full = [
+fetch = [
   "mutagen>=1.47",
   "syncedlyrics>=1.0",
-  "textual>=0.60"
+]
+tui = [
+  "textual>=0.60",
 ]
 timing = [
-  "librosa>=0.10"
+  "librosa>=0.10",
+]
+full = [
+  "lrc-tools[fetch,tui,timing]",
 ]
 
 [project.scripts]
-lrc-tools = "tui_main:main"
-lt = "tui_main:main"
-lrc-fetch = "lrc_puller_cli:main"
-lrc-processor = "lrc_processor_cli:main"
-lrc-vis = "lrc_vis_cli:main"
+lrc-tools = "lrc_tools.cli.tui:main"
+lt = "lrc_tools.cli.tui:main"
+lrc-fetch = "lrc_tools.cli.fetch:main"
+lrc-processor = "lrc_tools.cli.process:main"
+lrc-vis = "lrc_tools.cli.vis:main"
 
 [project.urls]
 Homepage = "https://github.com/RicknotDev/lrc-tools"
@@ -56,10 +58,12 @@ Repository = "https://github.com/RicknotDev/lrc-tools"
 
 [tool.hatch.build]
 include = [
-  "*.py",
-  "tui/*.py",
+  "src/**/*.py",
   "config_example.yaml",
   "custom_fonts.json",
   "README.md",
   "LICENSE"
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lrc_tools"]
