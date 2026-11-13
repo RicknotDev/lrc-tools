@@ -96,7 +96,7 @@ class SetupWizard(Screen):
         core.save_state(self.state)
         wlrc = core.count_files(self.state.lyrics_processed, "*.wlrc")
         w(f"\n[green]\u2713 Setup listo — {wlrc} archivos .wlrc[/]")
-        w("Usá [bold]Launch visualizer[/] o tecla [bold]v[/]")
+        w("Usá [bold]Visualizador[/] o tecla [bold]v[/]")
         self.dismiss(True)
 
     async def _pipe(self, cmd: list[str], log: RichLog) -> int:

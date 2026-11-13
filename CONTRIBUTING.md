@@ -41,4 +41,4 @@ scripts/             # dev/build scripts
 
 ## Release process
 
-Tags `v*.*.*` trigger automated PyPI publish + binary builds via CI.
+Tags `v*.*.*` trigger binary builds and a GitHub Release via CI (PyPI publishing only runs if a `PYPI_TOKEN` secret is configured).

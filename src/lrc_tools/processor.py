@@ -14,7 +14,7 @@ def detect_onset_positions(
     try:
         librosa = check_optional(
             "librosa",
-            'python3 -m pip install --user "lrc-tools[timing]"',
+            'python -m pip install librosa',
             "word-level onset detection",
         )
         if librosa is None:

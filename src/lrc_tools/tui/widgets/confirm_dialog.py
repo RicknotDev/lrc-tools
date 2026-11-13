@@ -43,3 +43,6 @@ class ConfirmDialog(ModalScreen[bool]):
 
     def key_n(self) -> None:
         self.dismiss(False)
+
+    def key_escape(self) -> None:
+        self.dismiss(False)

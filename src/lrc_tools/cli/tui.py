@@ -34,7 +34,7 @@ def _simple_menu() -> int:
 
         if choice == 1:
             console.print("[yellow]Textual is not installed.[/]")
-            console.print('Install it with: [bold]python3 -m pip install --user "lrc-tools[tui]"[/]')
+            console.print('Install it with: [bold]python -m pip install textual[/]')
             return 1
         # Run through the current interpreter so this works even when the
         # console scripts are not on PATH (common with `pip install --user` on Windows).

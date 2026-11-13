@@ -11,8 +11,8 @@
 Fetch, process, and visualize synced lyrics (`.lrc`) from your terminal.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/RicknotDev/lrc-tools/ci.yml?branch=main&label=CI)](https://github.com/RicknotDev/lrc-tools/actions)
-[![PyPI](https://img.shields.io/pypi/v/lrc-tools)](https://pypi.org/project/lrc-tools/)
-[![Python](https://img.shields.io/pypi/pyversions/lrc-tools)](https://www.python.org/)
+[![Release](https://img.shields.io/github/v/release/RicknotDev/lrc-tools)](https://github.com/RicknotDev/lrc-tools/releases/latest)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS%20%7C%20windows-informational)](#)
 
@@ -21,9 +21,11 @@ Fetch, process, and visualize synced lyrics (`.lrc`) from your terminal.
 ## Try it now
 
 ```bash
-pip install lrc-tools
+pip install "lrc-tools[full] @ git+https://github.com/RicknotDev/lrc-tools.git"
 lrc-tools
 ```
+
+No Python? Grab a standalone binary from the [latest release](https://github.com/RicknotDev/lrc-tools/releases/latest).
 
 Pick your music folder in the TUI, fetch lyrics, process them, and see them in real time — all without leaving the terminal.
 
@@ -51,13 +53,18 @@ Everything is also available through the interactive TUI: `lrc-tools` opens a me
 - **ffmpeg / ffprobe** (all platforms — used for audio analysis and playback)
 - **playerctl** (Linux only — used for MPRIS media player integration)
 
-### pip (Linux / macOS / Windows)
+### pip from GitHub (Linux / macOS / Windows)
+
+lrc-tools is not published on PyPI; install it straight from this repository:
 
 ```bash
-pip install lrc-tools
+pip install "lrc-tools @ git+https://github.com/RicknotDev/lrc-tools.git"
 
 # With optional heavy deps (mutagen, librosa, textual):
-pip install "lrc-tools[full]"
+pip install "lrc-tools[full] @ git+https://github.com/RicknotDev/lrc-tools.git"
+
+# A specific version:
+pip install "lrc-tools[full] @ git+https://github.com/RicknotDev/lrc-tools.git@v0.6.0"
 ```
 
 > Windows: works best in PowerShell or Windows Terminal. For best experience install `ffmpeg` via `winget install ffmpeg`.
@@ -81,6 +88,8 @@ pip install "lrc-tools[full]"
 ### Binary release
 
 Download a standalone executable from the [Releases page](https://github.com/RicknotDev/lrc-tools/releases) — no Python needed.
+Each release ships `lrc-tools`, `lrc-fetch`, `lrc-processor` and `lrc-vis` for Linux (x86_64), macOS (Apple Silicon) and Windows (x86_64).
+On Linux/macOS make it executable first: `chmod +x lrc-tools-linux-x86_64`.
 
 ### Linux — install script
 
@@ -106,7 +115,24 @@ iwr -Uri https://raw.githubusercontent.com/RicknotDev/lrc-tools/main/install.ps1
 | `lrc-processor` | `lrc_tools.cli.process:main` | Split phrases, generate word-level `.wlrc` |
 | `lrc-vis` | `lrc_tools.cli.vis:main` | Real-time visualizer in the terminal |
 
-All commands accept `--help` for full options.
+All commands accept `--help` for full options and `--version`.
+
+### `lrc-tools` (TUI)
+
+The interactive menu fits in an 80×24 terminal and shows a **"next step"** hint in the status panel (pick a folder → fetch → process → visualize). Press `?` inside the TUI for the full shortcut list.
+
+| Key | Action |
+|-----|--------|
+| `f` / `2` | Fetch lyrics from LRCLIB |
+| `p` / `3` | Process `.lrc` → `.wlrc` |
+| `v` / `4` | Pick a song and open the visualizer (type to filter, `Enter` launches the first match) |
+| `c` / `5` | **Check lyrics**: validate every `.lrc`, repair duplicates/unsorted lines (a `.bak` is kept) |
+| `r` | Quick mode: fetch + process in one go |
+| `1`, `6`–`9`, `0` | Setup wizard, download songs, paths, dependencies, settings, delete lyrics |
+| `?` | Shortcut reference |
+| `q` | Quit |
+
+While a fetch/process task runs, the screen shows elapsed time; `c` cancels it and `Esc` asks before leaving a running task.
 
 ### `lrc-fetch`
 
