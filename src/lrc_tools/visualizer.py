@@ -3,19 +3,18 @@
 import threading
 import time
 from pathlib import Path
-from typing import Optional
 
 
 class SyncData:
     def __init__(self):
         self._lock = threading.Lock()
-        self.position: Optional[float] = None
+        self.position: float | None = None
         self.should_resync: bool = False
         self.running: bool = True
-        self.current_title: Optional[str] = None
+        self.current_title: str | None = None
         self.paused: bool = False
-        self.pinned_lrc: Optional[Path] = None
-        self.pinned_title: Optional[str] = None
+        self.pinned_lrc: Path | None = None
+        self.pinned_title: str | None = None
 
 
 def position_monitor(sync_data: SyncData, get_position_func, get_track_func, get_status_func):
@@ -68,19 +67,19 @@ def position_monitor(sync_data: SyncData, get_position_func, get_track_func, get
 
 def run_visualizer(
     lrc_dir: Path,
-    audio_dir: Optional[Path] = None,
+    audio_dir: Path | None = None,
     is_wlrc: bool = False,
-    font_data: Optional[dict] = None,
+    font_data: dict | None = None,
     refresh_rate: float = 0.05,
-    fixed_lrc: Optional[Path] = None,
+    fixed_lrc: Path | None = None,
     pin_track: bool = False,
     play_audio: bool = False,
 ) -> int:
     import sys
 
     from lrc_tools.audio import find_lrc_for_audio
-    from lrc_tools.parser import parse_lrc_simple
     from lrc_tools.display import clear_screen, display_text, display_waiting, hide_cursor, show_cursor
+    from lrc_tools.parser import parse_lrc_simple
     from lrc_tools.player import get_audio_file_info, get_position, get_status, get_track
 
     hide_cursor()

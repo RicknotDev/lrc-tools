@@ -2,7 +2,6 @@
 
 import json
 from pathlib import Path
-from typing import Dict, List
 
 BLOCK_LETTERS = {
     'A': ["  \u2588\u2588\u2588  ", " \u2588\u2588 \u2588\u2588 ", "\u2588\u2588\u2588\u2588\u2588\u2588\u2588", "\u2588\u2588   \u2588\u2588", "\u2588\u2588   \u2588\u2588"],
@@ -46,13 +45,13 @@ BLOCK_LETTERS = {
 
 COMPACT_LETTERS = {}
 
-FONTS: Dict[str, Dict[str, List[str]]] = {
+FONTS: dict[str, dict[str, list[str]]] = {
     'block': BLOCK_LETTERS,
     'compact': COMPACT_LETTERS,
 }
 
 
-FALLBACK_CHARS: Dict[str, str] = {
+FALLBACK_CHARS: dict[str, str] = {
     'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A', 'Æ': 'A',
     'Ç': 'C', 'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
     'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
@@ -61,11 +60,11 @@ FALLBACK_CHARS: Dict[str, str] = {
 }
 
 
-def get_font(name: str = 'block') -> Dict[str, List[str]]:
+def get_font(name: str = 'block') -> dict[str, list[str]]:
     return FONTS.get(name, BLOCK_LETTERS)
 
 
-def render_text(text: str, font_name: str = 'block') -> List[str]:
+def render_text(text: str, font_name: str = 'block') -> list[str]:
     font = get_font(font_name)
     text = text.upper()
     height = len(font.get('A', ['']))
@@ -86,10 +85,10 @@ def render_text(text: str, font_name: str = 'block') -> List[str]:
     return lines
 
 
-def load_fonts_from_json(json_path: Path) -> Dict[str, Dict[str, List[str]]]:
-    with open(json_path, 'r', encoding='utf-8') as f:
+def load_fonts_from_json(json_path: Path) -> dict[str, dict[str, list[str]]]:
+    with open(json_path, encoding='utf-8') as f:
         return json.load(f)
 
 
-def register_font(name: str, font_data: Dict[str, List[str]]):
+def register_font(name: str, font_data: dict[str, list[str]]):
     FONTS[name] = font_data

@@ -179,9 +179,6 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="lrc-tools TUI")
     parser.add_argument("--quick", "-r", action="store_true", help="Modo rápido: fetch + process")
     args = parser.parse_args()
-    if sys.version_info < (3, 12):
-        print("Se requiere Python 3.12+", file=sys.stderr)
-        sys.exit(1)
     sys.exit(run_tui(quick=args.quick))
 
 

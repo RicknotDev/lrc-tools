@@ -8,7 +8,7 @@ import os
 import sys
 from types import ModuleType
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 if os.name == "nt" and hasattr(sys.stdout, "reconfigure"):
     try:
@@ -36,8 +36,7 @@ __all__ = [
 def print_missing_optional(
     package_name: str, install_hint: str, description: str | None = None
 ) -> None:
-    message = f"'{
-        package_name}' is not installed"
+    message = f"'{package_name}' is not installed"
     if description:
         message += f" — needed for {description}."
     print(message, file=sys.stderr)

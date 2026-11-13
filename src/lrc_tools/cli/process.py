@@ -5,14 +5,17 @@ import sys
 from pathlib import Path
 
 from rich.console import Console
-from rich.progress import BarColumn, Progress, TextColumn
 from rich.panel import Panel
+from rich.progress import BarColumn, Progress, TextColumn
 from rich.table import Table
+from rich.text import Text
+from rich.traceback import install as install_traceback
 
+from lrc_tools import __version__
 from lrc_tools.config import Config
 from lrc_tools.processor import process_lrc_file
-from rich.traceback import install as install_traceback
-install_traceback(show_locals=True)
+
+install_traceback(show_locals=False)
 
 console = Console()
 
@@ -36,7 +39,7 @@ EPILOG = """
 def main():
     parser = argparse.ArgumentParser(
         description="Process LRC files: split long phrases and optionally convert to word-level WLRC",
-        epilog=EPILOG,
+        epilog=Text.from_markup(EPILOG).plain,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--lrc-dir", type=Path, required=True, help="Directory containing input .lrc files")
@@ -52,6 +55,8 @@ def main():
     parser.add_argument("--onset-detection", action="store_true", help="Use librosa onset detection for word timing")
     parser.add_argument("--quiet", action="store_true", help="Suppress per-file output")
     parser.add_argument("--config", type=Path, help="Path to config.yaml")
+
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     args = parser.parse_args()
 
@@ -70,9 +75,22 @@ def main():
 
     cfg = Config(args.config).processor if args.config else None
 
-    max_phrase_duration = args.max_phrase_duration or (cfg.max_phrase_duration if cfg else 2.5)
-    min_phrase_duration = args.min_phrase_duration or (cfg.min_phrase_duration if cfg else 0.3)
-    max_words_per_phrase = args.max_words or (cfg.max_words_per_phrase if cfg else 8)
+    def _pick(cli_value, cfg_attr, default):
+        # Explicit CLI values win even when they are 0; then config; then built-in default.
+        if cli_value is not None:
+            return cli_value
+        return getattr(cfg, cfg_attr) if cfg else default
+
+    max_phrase_duration = _pick(args.max_phrase_duration, "max_phrase_duration", 2.5)
+    min_phrase_duration = _pick(args.min_phrase_duration, "min_phrase_duration", 0.3)
+    max_words_per_phrase = _pick(args.max_words, "max_words_per_phrase", 8)
+
+    if max_phrase_duration <= 0 or min_phrase_duration < 0 or max_words_per_phrase < 1:
+        console.print(
+            "[red]Error:[/] --max-phrase-duration must be > 0, "
+            "--min-phrase-duration >= 0 and --max-words >= 1"
+        )
+        return 1
     split_on_commas = not args.no_split_commas
     use_onset_detection = args.onset_detection or (cfg.use_onset_detection if cfg else False)
     onset_blend_factor = cfg.onset_blend_factor if cfg else 0.5

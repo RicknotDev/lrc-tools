@@ -2,7 +2,6 @@
 
 import os
 import sys
-from typing import Optional
 
 
 def _supports_ansi() -> bool:
@@ -115,7 +114,7 @@ def render_waiting() -> str:
 def display_text(
     text: str,
     use_block_letters: bool = True,
-    font_data: Optional[dict] = None,
+    font_data: dict | None = None,
     clear: bool = True,
 ):
     if clear:

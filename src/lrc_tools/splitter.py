@@ -1,10 +1,8 @@
 """Phrase splitting logic for LRC processor."""
 
-from typing import List, Dict
 
 
-
-def find_all_split_points(text: str) -> List[int]:
+def find_all_split_points(text: str) -> list[int]:
     words = text.split()
     split_points = []
     for i, word in enumerate(words):
@@ -14,7 +12,7 @@ def find_all_split_points(text: str) -> List[int]:
     return split_points
 
 
-def find_split_point(words: List[str], prefer_index: int) -> int:
+def find_split_point(words: list[str], prefer_index: int) -> int:
     punctuation_priority = [
         ['.', '!', '?'],
         [',', ';', '\u2014', '-'],
@@ -53,7 +51,7 @@ def split_phrase_intelligently(
     max_phrase_duration: float = 2.5,
     max_words_per_phrase: int = 8,
     split_on_commas: bool = True
-) -> List[Dict]:
+) -> list[dict]:
     words = text.split()
 
     comma_splits = []

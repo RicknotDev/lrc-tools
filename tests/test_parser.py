@@ -7,8 +7,16 @@ import unittest
 from pathlib import Path
 
 from lrc_tools.parser import (
-    parse_lrc, parse_lrc_simple, parse_metadata, format_timestamp,
-    write_lrc, validate_lrc, repair_lrc, offset_timestamps, merge_lrc, split_lrc,
+    format_timestamp,
+    merge_lrc,
+    offset_timestamps,
+    parse_lrc,
+    parse_lrc_simple,
+    parse_metadata,
+    repair_lrc,
+    split_lrc,
+    validate_lrc,
+    write_lrc,
 )
 
 

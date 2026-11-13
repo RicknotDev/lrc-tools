@@ -2,12 +2,11 @@
 
 import subprocess
 from pathlib import Path
-from typing import Optional, List
 
 AUDIO_EXTENSIONS = {'.mp3', '.flac', '.m4a', '.ogg', '.opus', '.wav', '.wma', '.aac'}
 
 
-def get_audio_duration(audio_path: Path) -> Optional[float]:
+def get_audio_duration(audio_path: Path) -> float | None:
     try:
         result = subprocess.run(
             ['ffprobe', '-v', 'error', '-show_entries', 'format=duration',
@@ -21,7 +20,7 @@ def get_audio_duration(audio_path: Path) -> Optional[float]:
     return None
 
 
-def find_audio_for_lrc(lrc_path: Path, audio_dir: Path) -> Optional[Path]:
+def find_audio_for_lrc(lrc_path: Path, audio_dir: Path) -> Path | None:
     base_name = lrc_path.stem
 
     for ext in AUDIO_EXTENSIONS:
@@ -42,7 +41,7 @@ def find_audio_for_lrc(lrc_path: Path, audio_dir: Path) -> Optional[Path]:
     return None
 
 
-def get_audio_files(directory: Path) -> List[Path]:
+def get_audio_files(directory: Path) -> list[Path]:
     audio_files = []
     for root, _, files in directory.walk():
         for file in files:
@@ -54,7 +53,7 @@ def get_audio_files(directory: Path) -> List[Path]:
 
 def find_lrc_for_audio(audio_path: Path, lrc_dir: Path,
                        artist: str = None, title: str = None,
-                       is_wlrc: bool = False) -> Optional[Path]:
+                       is_wlrc: bool = False) -> Path | None:
     if not lrc_dir.exists():
         return None
 

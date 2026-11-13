@@ -4,7 +4,6 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 from urllib import parse, request
 from urllib.error import HTTPError, URLError
 
@@ -53,7 +52,7 @@ _TRAILING_ARTIFACTS = [" 3", " -3", " _.", " -.", " -)", " -c", " 33"]
 _QUALITY_TAGS = ["[FLAC]", "[MP3]", "[320]", "[256]", "[128]"]
 
 
-def get_audio_metadata(filepath: Path) -> Optional[Dict[str, str]]:
+def get_audio_metadata(filepath: Path) -> dict[str, str] | None:
     if not MUTAGEN_AVAILABLE:
         return None
     try:
@@ -121,7 +120,7 @@ def _clean_title(raw_title: str) -> str:
     return title
 
 
-def extract_metadata_from_filename(filepath: Path) -> Dict[str, Optional[str]]:
+def extract_metadata_from_filename(filepath: Path) -> dict[str, str | None]:
     stem = filepath.stem
     for tag in _QUALITY_TAGS:
         stem = stem.replace(tag, "")
@@ -150,7 +149,7 @@ def extract_metadata_from_filename(filepath: Path) -> Dict[str, Optional[str]]:
     }
 
 
-def extract_metadata(filepath: Path) -> Dict[str, Optional[str]]:
+def extract_metadata(filepath: Path) -> dict[str, str | None]:
     tag_meta = get_audio_metadata(filepath)
     filename_meta = extract_metadata_from_filename(filepath)
 
@@ -167,11 +166,11 @@ def extract_metadata(filepath: Path) -> Dict[str, Optional[str]]:
 def search_lrclib(
     artist: str,
     title: str,
-    duration: Optional[float] = None,
+    duration: float | None = None,
     max_retries: int = 3,
     retry_backoff: float = 0.5,
-) -> List[Dict]:
-    params: Dict[str, str] = {"artist_name": artist, "track_name": title}
+) -> list[dict]:
+    params: dict[str, str] = {"artist_name": artist, "track_name": title}
     if duration is not None:
         params["duration"] = str(int(duration))
 
@@ -189,13 +188,13 @@ def search_lrclib(
     return []
 
 
-def _pick_lyrics(result: Dict, prefer_synced: bool = True) -> Optional[str]:
+def _pick_lyrics(result: dict, prefer_synced: bool = True) -> str | None:
     if prefer_synced:
         return result.get("syncedLyrics") or result.get("plainLyrics")
     return result.get("plainLyrics") or result.get("syncedLyrics")
 
 
-def search_syncedlyrics(artist: str, title: str) -> Optional[str]:
+def search_syncedlyrics(artist: str, title: str) -> str | None:
     if not SYNCEDLYRICS_AVAILABLE or syncedlyrics_search is None:
         return None
     try:
@@ -208,16 +207,16 @@ def search_syncedlyrics(artist: str, title: str) -> Optional[str]:
 
 
 def search_song(
-    song_info: Tuple[Path, Dict],
+    song_info: tuple[Path, dict],
     prefer_synced: bool = True,
     request_delay: float = 0.05,
     max_retries: int = 3,
     retry_backoff: float = 0.5,
-) -> Dict:
+) -> dict:
     filepath, metadata = song_info
     time.sleep(request_delay)
 
-    def _lrclib_hit(artist, title) -> Optional[str]:
+    def _lrclib_hit(artist, title) -> str | None:
         results = search_lrclib(artist, title, max_retries=max_retries, retry_backoff=retry_backoff)
         if results:
             return _pick_lyrics(results[0], prefer_synced)
@@ -281,5 +280,5 @@ def save_lyrics(content: str, output_path: Path) -> bool:
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(content)
         return True
-    except IOError:
+    except OSError:
         return False
