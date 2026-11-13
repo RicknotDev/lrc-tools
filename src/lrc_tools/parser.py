@@ -1,68 +1,88 @@
 """LRC file parsing and validation utilities."""
 
+from __future__ import annotations
+
 import re
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+
+# A single "[mm:ss]" or "[mm:ss.xx]" tag. Minutes may exceed two digits.
+_TAG_RE = re.compile(r'\[(\d{1,3}):(\d{2}(?:\.\d{1,3})?)\]')
+# One or more leading timestamp tags followed by the lyric text,
+# e.g. "[00:12.00][00:45.30]Chorus line".
+_TIMESTAMP_RE = re.compile(r'((?:\[\d{1,3}:\d{2}(?:\.\d{1,3})?\])+)(.*)')
+_METADATA_RE = re.compile(
+    r'\[(ti|ar|al|au|by|re|ve|tool|length|offset|#):(.*)\]\s*$', re.IGNORECASE
+)
+
+# utf-8-sig transparently strips a BOM (common in files saved by Windows editors).
+_ENCODING = 'utf-8-sig'
 
 
-_TIMESTAMP_RE = re.compile(r'\[(\d{1,2}):(\d{2}(?:\.\d{1,3})?)\](.*)')
-_METADATA_RE = re.compile(r'\[(ti|ar|al|by|re|ve|length):(.+)\]', re.IGNORECASE)
+def _tag_seconds(minutes: str, seconds: str) -> float:
+    return int(minutes) * 60 + float(seconds)
 
 
-def parse_lrc(lrc_path: Path) -> List[Dict]:
+def _iter_timed(line: str) -> Iterator[tuple[float, str]]:
+    """Yield ``(timestamp, text)`` for every timestamp tag at the start of *line*."""
+    match = _TIMESTAMP_RE.match(line)
+    if not match:
+        return
+    tags, text = match.groups()
+    text = text.strip()
+    for m in _TAG_RE.finditer(tags):
+        yield _tag_seconds(*m.groups()), text
+
+
+def _read_lines(lrc_path: Path, errors: str = 'strict') -> list[str]:
+    with open(lrc_path, encoding=_ENCODING, errors=errors) as f:
+        return f.read().splitlines()
+
+
+def parse_lrc(lrc_path: Path) -> list[dict]:
     lines = []
-    with open(lrc_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-            match = _TIMESTAMP_RE.match(line)
-            if match:
-                minutes, seconds, text = match.groups()
-                timestamp = float(minutes) * 60 + float(seconds)
-                text = text.strip()
-                if text:
-                    lines.append({'timestamp': timestamp, 'text': text})
+    for raw in _read_lines(lrc_path):
+        line = raw.strip()
+        if not line or line.startswith('#'):
+            continue
+        for timestamp, text in _iter_timed(line):
+            if text:
+                lines.append({'timestamp': timestamp, 'text': text})
     return sorted(lines, key=lambda x: x['timestamp'])
 
 
-def parse_lrc_simple(lrc_path: Path) -> List[Tuple[float, str]]:
-    lines = []
-    pattern = re.compile(r'\[(\d{1,2}):(\d{2}\.\d{1,3})\](.+)')
-    with open(lrc_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-            match = pattern.match(line)
-            if match:
-                minutes, seconds, text = match.groups()
-                timestamp = int(minutes) * 60 + float(seconds)
-                text = text.strip()
-                if text:
-                    lines.append((timestamp, text))
-    return sorted(lines, key=lambda x: x[0])
+def parse_lrc_simple(lrc_path: Path) -> list[tuple[float, str]]:
+    return [(entry['timestamp'], entry['text']) for entry in parse_lrc(lrc_path)]
 
 
-def parse_metadata(lrc_path: Path) -> Dict[str, str]:
+def parse_metadata(lrc_path: Path) -> dict[str, str]:
     meta = {}
-    with open(lrc_path, 'r', encoding='utf-8', errors='replace') as f:
-        for line in f:
-            line = line.strip()
-            match = _METADATA_RE.match(line)
-            if match:
-                key, value = match.groups()
-                meta[key.lower()] = value.strip()
+    for raw in _read_lines(lrc_path, errors='replace'):
+        match = _METADATA_RE.match(raw.strip())
+        if match:
+            key, value = match.groups()
+            meta[key.lower()] = value.strip()
     return meta
 
 
+def _split_seconds(seconds: float) -> tuple[int, float]:
+    """Split into (minutes, seconds) rounded to centiseconds without producing ``60.00``."""
+    centis = round(max(0.0, seconds) * 100)
+    minutes, rest = divmod(centis, 6000)
+    return int(minutes), rest / 100
+
+
 def format_timestamp(seconds: float) -> str:
-    minutes = int(seconds // 60)
-    secs = seconds % 60
+    minutes, secs = _split_seconds(seconds)
     return f"[{minutes:02d}:{secs:05.2f}]"
 
 
-def write_lrc(output_path: Path, lines: List[Dict], metadata: Dict = None, header_comments: List[str] = None):
+def write_lrc(
+    output_path: Path,
+    lines: list[dict],
+    metadata: dict | None = None,
+    header_comments: list[str] | None = None,
+) -> None:
     with open(output_path, 'w', encoding='utf-8') as f:
         if header_comments:
             for comment in header_comments:
@@ -78,19 +98,18 @@ def write_lrc(output_path: Path, lines: List[Dict], metadata: Dict = None, heade
             f.write(f"{format_timestamp(line['timestamp'])}{line['text']}\n")
 
 
-def validate_lrc(lrc_path: Path) -> List[str]:
+def validate_lrc(lrc_path: Path) -> list[str]:
     errors = []
     try:
-        text = lrc_path.read_text(encoding='utf-8', errors='replace')
+        lines = _read_lines(lrc_path, errors='replace')
     except OSError as e:
         return [f"Cannot read file: {e}"]
 
-    lines = text.splitlines()
     if not lines:
         return ["Empty file"]
 
     timestamp_lines = 0
-    seen_timestamps = set()
+    seen_timestamps: set[float] = set()
 
     for i, line in enumerate(lines, 1):
         stripped = line.strip()
@@ -98,16 +117,16 @@ def validate_lrc(lrc_path: Path) -> List[str]:
             continue
         if _METADATA_RE.match(stripped):
             continue
-        match = _TIMESTAMP_RE.match(stripped)
-        if match:
-            minutes, seconds, content = match.groups()
-            ts = round(float(minutes) * 60 + float(seconds), 3)
+        timed = list(_iter_timed(stripped))
+        if not timed:
+            errors.append(f"L{i}: Unrecognized line format: {stripped[:60]}")
+            continue
+        for ts, _ in timed:
+            ts = round(ts, 3)
             if ts in seen_timestamps:
                 errors.append(f"L{i}: Duplicate timestamp [{ts}s]")
             seen_timestamps.add(ts)
-            timestamp_lines += 1
-        else:
-            errors.append(f"L{i}: Unrecognized line format: {stripped[:60]}")
+        timestamp_lines += 1
 
     if timestamp_lines == 0:
         errors.append("No timestamped lyric lines found")
@@ -115,37 +134,39 @@ def validate_lrc(lrc_path: Path) -> List[str]:
     return errors
 
 
-def repair_lrc(lrc_path: Path, output_path: Optional[Path] = None) -> int:
-    """Remove duplicate timestamps, sort lines, write clean LRC. Returns count of issues fixed."""
-    raw_lines = []
+def repair_lrc(lrc_path: Path, output_path: Path | None = None) -> int:
+    """Remove duplicate timestamps, sort lines, write clean LRC. Returns count of issues fixed.
+
+    Lines carrying several timestamps (``[00:10.00][00:50.00]text``) are expanded
+    into one line per timestamp.
+    """
+    timed_lines: list[tuple[float, str]] = []
     metadata_lines = []
     comment_lines = []
-    seen_timestamps = set()
+    seen_timestamps: set[float] = set()
     duplicates = 0
 
-    with open(lrc_path, 'r', encoding='utf-8', errors='replace') as f:
-        for line in f:
-            stripped = line.rstrip('\n\r')
-            if stripped.startswith('#'):
-                comment_lines.append(stripped)
-                continue
-            if _METADATA_RE.match(stripped):
-                metadata_lines.append(stripped)
-                continue
-            match = _TIMESTAMP_RE.match(stripped)
-            if match:
-                minutes, seconds, content = match.groups()
-                ts = round(float(minutes) * 60 + float(seconds), 3)
-                if ts in seen_timestamps:
+    for raw in _read_lines(lrc_path, errors='replace'):
+        stripped = raw.strip()
+        if stripped.startswith('#'):
+            comment_lines.append(stripped)
+            continue
+        if _METADATA_RE.match(stripped):
+            metadata_lines.append(stripped)
+            continue
+        timed = list(_iter_timed(stripped))
+        if timed:
+            for ts, text in timed:
+                key = round(ts, 3)
+                if key in seen_timestamps:
                     duplicates += 1
                     continue
-                seen_timestamps.add(ts)
-                raw_lines.append((ts, stripped))
-            else:
-                if stripped:
-                    comment_lines.append(f"# {stripped}")
+                seen_timestamps.add(key)
+                timed_lines.append((ts, f"{format_timestamp(ts)}{text}"))
+        elif stripped:
+            comment_lines.append(f"# {stripped}")
 
-    raw_lines.sort(key=lambda x: x[0])
+    timed_lines.sort(key=lambda x: x[0])
     out = lrc_path if output_path is None else output_path
     with open(out, 'w', encoding='utf-8') as f:
         for c in comment_lines:
@@ -154,30 +175,32 @@ def repair_lrc(lrc_path: Path, output_path: Optional[Path] = None) -> int:
             f.write(m + '\n')
         if metadata_lines:
             f.write('\n')
-        for _, line in raw_lines:
+        for _, line in timed_lines:
             f.write(line + '\n')
     return duplicates
 
 
-def offset_timestamps(lrc_path: Path, delta: float, output_path: Optional[Path] = None) -> Path:
+def offset_timestamps(lrc_path: Path, delta: float, output_path: Path | None = None) -> Path:
     out = lrc_path if output_path is None else output_path
-    with open(lrc_path, 'r', encoding='utf-8', errors='replace') as f:
-        original = f.read()
+    original = '\n'.join(_read_lines(lrc_path, errors='replace')) + '\n'
 
-    def _shift(m):
-        minutes, seconds, text = m.groups()
-        orig_ts = float(minutes) * 60 + float(seconds)
-        new_ts = max(0.0, orig_ts + delta)
-        new_m = int(new_ts // 60)
-        new_s = new_ts % 60
-        return f"[{new_m:02d}:{new_s:05.2f}]{text}"
+    def _shift(m: re.Match) -> str:
+        new_ts = _tag_seconds(*m.groups()) + delta
+        return format_timestamp(new_ts)
 
-    shifted = _TIMESTAMP_RE.sub(_shift, original)
+    def _shift_line(line: str) -> str:
+        match = _TIMESTAMP_RE.match(line)
+        if not match:
+            return line
+        tags, text = match.groups()
+        return _TAG_RE.sub(_shift, tags) + text
+
+    shifted = '\n'.join(_shift_line(line) for line in original.split('\n'))
     out.write_text(shifted, encoding='utf-8')
     return out
 
 
-def merge_lrc(lrc_paths: List[Path], output_path: Path) -> int:
+def merge_lrc(lrc_paths: list[Path], output_path: Path) -> int:
     all_lines = []
     for path in lrc_paths:
         all_lines.extend(parse_lrc(path))
@@ -186,19 +209,21 @@ def merge_lrc(lrc_paths: List[Path], output_path: Path) -> int:
     return len(all_lines)
 
 
-def split_lrc(lrc_path: Path, n: int, output_dir: Path) -> List[Path]:
+def split_lrc(lrc_path: Path, n: int, output_dir: Path) -> list[Path]:
+    if n < 1:
+        raise ValueError(f"n must be >= 1, got {n}")
     lines = parse_lrc(lrc_path)
     if not lines:
         return []
-    chunk_size = max(1, len(lines) // n)
+    n = min(n, len(lines))
+    # Distribute the remainder so chunks differ in size by at most one line.
+    base, extra = divmod(len(lines), n)
     created = []
+    start = 0
     for i in range(n):
-        start = i * chunk_size
-        end = None if i == n - 1 else start + chunk_size
-        chunk = lines[start:end]
-        if not chunk:
-            break
+        end = start + base + (1 if i < extra else 0)
         out = output_dir / f"{lrc_path.stem}_part{i + 1}.lrc"
-        write_lrc(out, chunk)
+        write_lrc(out, lines[start:end])
         created.append(out)
+        start = end
     return created

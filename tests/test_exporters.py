@@ -7,9 +7,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from lrc_tools.exporters import export_srt, export_json
-from lrc_tools.importers import import_srt, import_json
-from lrc_tools.parser import write_lrc, parse_lrc
+from lrc_tools.exporters import export_json, export_srt
+from lrc_tools.importers import import_json, import_srt
+from lrc_tools.parser import parse_lrc, write_lrc
 
 
 class TestExportImport(unittest.TestCase):
@@ -67,7 +67,7 @@ class TestExportImport(unittest.TestCase):
         export_srt(lrc, srt)
         imported = import_srt(srt)
         orig = parse_lrc(lrc)
-        for orig_line, imp_line in zip(orig, imported):
+        for orig_line, imp_line in zip(orig, imported, strict=False):
             self.assertAlmostEqual(orig_line['timestamp'], imp_line['timestamp'], places=1)
 
     def test_export_empty_lrc(self):

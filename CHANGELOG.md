@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] — 2026-11-13
+
+### Added
+- Standalone binaries for **all four tools** (`lrc-tools`, `lrc-fetch`, `lrc-processor`, `lrc-vis`) on Linux, macOS (Apple Silicon) and Windows, attached to each GitHub Release
+- `--version` flag on every CLI entry point
+- LRC parsing now supports lines with several timestamps (`[00:10.00][00:50.00]Chorus`), timestamps without fractions (`[01:05]`) and minutes > 99
+- Standard LRC tags `[offset:]`, `[au:]`, `[tool:]` and `[#:]` are recognised as metadata
+- `tests/test_parser_edge.py`: 21 regression tests (BOM, multi-timestamps, rounding, CRLF SRT, malformed JSON, CLI `--version`/`--help`)
+
+### Fixed
+- **Release pipeline**: `scripts/build_binary.py` passed an invalid entry point to PyInstaller, so every release build failed and no binaries were ever published. It now generates real launchers, collects `rich`/`textual` data, and the workflow smoke-tests each binary before uploading
+- Release workflow: PyPI publishing is skipped (instead of failing the job) when no `PYPI_TOKEN` secret is configured; sdist/wheel are now actually found for upload
+- Files saved with a UTF-8 BOM (Windows Notepad, many editors) lost their first lyric line; `[ti:]` on the first line was ignored
+- `format_timestamp()` / `offset_timestamps()` could produce invalid `[00:60.00]`; SRT export could produce `00:00:60,000`
+- SRT import failed on multi-line subtitles in CRLF files; JSON import crashed on entries without a timestamp
+- `split_lrc()` crashed with `n=0` and produced unbalanced chunks (last part carried the whole remainder)
+- `lrc-fetch`: the download thread prompt used the *search* thread config value; it no longer blocks waiting for input when run non-interactively or with `-y`
+- `lrc-processor`: explicit `0` values for `--min-phrase-duration` etc. were silently replaced by defaults; invalid values are now rejected
+- `--help` output showed raw rich markup (`[bold]`, `[dim]`) in the examples section
+- Crash tracebacks no longer dump every local variable (`show_locals`), which was noisy and could expose file paths/lyrics content
+- Fallback menu (no Textual installed) now runs the tools through the current interpreter, so it works when the scripts dir is not on `PATH`
+
+### Changed
+- Ruff rule set pinned in `pyproject.toml` (`E, F, W, I, UP, B`) so new ruff releases cannot break CI; code modernised to PEP 585/604 annotations
+
+## [0.4.0] — 2026-06-23
+
+### Added
+- macOS: visualizer auto-detects Music.app, Spotify and VLC via AppleScript (no playerctl needed)
+- macOS: more music directory candidates (`~/Music/iTunes`, `~/Music/Music`, `~/Music/Spotify`)
+
+### Fixed
+- Windows: `install.ps1` adds the Python Scripts dir to the user `PATH`
+- Windows: commands are looked up in every Python Scripts directory; spotdl missing no longer crashes
+- Windows: stdout/stderr forced to UTF-8 to prevent `UnicodeEncodeError`
+
 ## [0.3.0] — 2026-06-22
 
 ### Added

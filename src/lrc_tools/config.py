@@ -1,9 +1,9 @@
 """Configuration management for lrc-tools."""
 
 import json
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional
-from dataclasses import dataclass, asdict
+from typing import Any
 
 try:
     import yaml
@@ -45,7 +45,7 @@ class PullerConfig:
 
 
 class Config:
-    def __init__(self, config_file: Optional[Path] = None):
+    def __init__(self, config_file: Path | None = None):
         self.processor = ProcessorConfig()
         self.visualizer = VisualizerConfig()
         self.puller = PullerConfig()
@@ -56,10 +56,10 @@ class Config:
         if config_file.suffix in ['.yaml', '.yml']:
             if not _HAS_YAML:
                 raise ImportError("PyYAML is required to load .yaml config files")
-            with open(config_file, 'r') as f:
+            with open(config_file) as f:
                 data = yaml.safe_load(f)
         elif config_file.suffix == '.json':
-            with open(config_file, 'r') as f:
+            with open(config_file) as f:
                 data = json.load(f)
         else:
             raise ValueError(f"Unsupported config file format: {config_file.suffix}")
@@ -92,7 +92,7 @@ class Config:
         else:
             raise ValueError(f"Unsupported config file format: {config_file.suffix}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             'processor': asdict(self.processor),
             'visualizer': asdict(self.visualizer),
@@ -100,7 +100,7 @@ class Config:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Config':
+    def from_dict(cls, data: dict[str, Any]) -> 'Config':
         config = cls()
         if 'processor' in data:
             for key, value in data['processor'].items():

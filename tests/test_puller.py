@@ -6,7 +6,9 @@ import unittest
 from pathlib import Path
 
 from lrc_tools.puller import (
-    _clean_title, extract_metadata_from_filename, resolve_output_path,
+    _clean_title,
+    extract_metadata_from_filename,
+    resolve_output_path,
 )
 
 

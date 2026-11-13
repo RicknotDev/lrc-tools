@@ -10,9 +10,10 @@ import sys
 import sysconfig
 import threading
 import time
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterator, Optional
+from typing import Any
 
 IS_LINUX = sys.platform.startswith("linux")
 IS_MACOS = sys.platform.startswith("darwin")
@@ -617,7 +618,7 @@ def vis_cmd(
     return cmd
 
 
-def backup_file(path: Path, backup_dir: Optional[Path] = None) -> Optional[Path]:
+def backup_file(path: Path, backup_dir: Path | None = None) -> Path | None:
     if not path.is_file():
         return None
     dst = backup_dir or path.parent

@@ -9,16 +9,16 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 IS_WIN = os.name == "nt"
 
 
 class LocalAudioPlayer:
     def __init__(self) -> None:
-        self._proc: Optional[subprocess.Popen] = None
-        self._ipc_path: Optional[str] = None
-        self._backend: Optional[str] = None
+        self._proc: subprocess.Popen | None = None
+        self._ipc_path: str | None = None
+        self._backend: str | None = None
         self._start_mono: float = 0.0
 
     def play(self, path: Path) -> bool:
@@ -64,7 +64,7 @@ class LocalAudioPlayer:
         self.stop()
         return False
 
-    def _mpv_command(self, command: list[Any]) -> Optional[dict]:
+    def _mpv_command(self, command: list[Any]) -> dict | None:
         if not self._ipc_path:
             return None
         try:
@@ -99,7 +99,7 @@ class LocalAudioPlayer:
         self._backend = "ffplay"
         return True
 
-    def get_position(self) -> Optional[float]:
+    def get_position(self) -> float | None:
         if self._proc and self._proc.poll() is not None:
             return None
         if self._backend == "mpv":
@@ -110,7 +110,7 @@ class LocalAudioPlayer:
             return time.monotonic() - self._start_mono
         return None
 
-    def get_status(self) -> Optional[str]:
+    def get_status(self) -> str | None:
         if self._proc and self._proc.poll() is not None:
             return "Stopped"
         if self._backend == "mpv":
@@ -141,7 +141,7 @@ class LocalAudioPlayer:
         self._backend = None
 
 
-def resolve_audio_for_lyrics(lrc_path: Path, audio_dir: Optional[Path]) -> Optional[Path]:
+def resolve_audio_for_lyrics(lrc_path: Path, audio_dir: Path | None) -> Path | None:
     if not audio_dir or not audio_dir.is_dir():
         return None
     from lrc_tools.audio import find_audio_for_lrc

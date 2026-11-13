@@ -11,7 +11,7 @@ from rich.panel import Panel
 from rich.prompt import IntPrompt
 from rich.traceback import install as install_traceback
 
-install_traceback(show_locals=True)
+install_traceback(show_locals=False)
 
 console = Console()
 
@@ -36,12 +36,11 @@ def _simple_menu() -> int:
             console.print("[yellow]Textual is not installed.[/]")
             console.print('Install it with: [bold]python3 -m pip install --user "lrc-tools[tui]"[/]')
             return 1
-        if choice == 2:
-            return subprocess.call(["lrc-fetch", "--help"])
-        if choice == 3:
-            return subprocess.call(["lrc-processor", "--help"])
-        if choice == 4:
-            return subprocess.call(["lrc-vis", "--help"])
+        # Run through the current interpreter so this works even when the
+        # console scripts are not on PATH (common with `pip install --user` on Windows).
+        modules = {2: "lrc_tools.cli.fetch", 3: "lrc_tools.cli.process", 4: "lrc_tools.cli.vis"}
+        if choice in modules:
+            return subprocess.call([sys.executable, "-m", modules[choice], "--help"])
         if choice == 5:
             console.print("[green]Goodbye![/]")
             return 0
@@ -49,6 +48,11 @@ def _simple_menu() -> int:
 
 
 def main() -> int:
+    if any(arg in ("--version", "-V") for arg in sys.argv[1:]):
+        from lrc_tools import __version__
+
+        print(f"lrc-tools {__version__}")
+        return 0
     try:
         importlib.import_module("textual")
     except ImportError:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from lrc_tools.splitter import split_phrase_intelligently, find_split_point, find_all_split_points
+from lrc_tools.splitter import find_all_split_points, find_split_point, split_phrase_intelligently
 
 
 class TestFindSplitPoints(unittest.TestCase):

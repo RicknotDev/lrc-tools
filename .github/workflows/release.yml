@@ -33,7 +33,7 @@ jobs:
           - os: ubuntu-latest
             label: linux-x86_64
           - os: macos-latest
-            label: macos-x86_64
+            label: macos-arm64
           - os: windows-latest
             label: windows-x86_64
 
@@ -44,24 +44,35 @@ jobs:
         with:
           python-version: "3.12"
 
+      # librosa (timing extra) is left out: it pulls numba/llvmlite and bloats
+      # the binaries; onset detection stays available via `pip install lrc-tools[full]`.
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install pyinstaller
-          python -m pip install -e ".[full]"
+          python -m pip install ".[fetch,tui]"
 
-      - name: Build binary with PyInstaller
+      - name: Build binaries with PyInstaller
         run: python scripts/build_binary.py
 
-      - name: Rename binary per platform
+      - name: Smoke-test binaries
+        shell: bash
+        run: |
+          ext=""
+          if [ "$RUNNER_OS" = "Windows" ]; then ext=".exe"; fi
+          for name in lrc-tools lrc-fetch lrc-processor lrc-vis; do
+            "dist/$name$ext" --version
+          done
+
+      - name: Rename binaries per platform
         shell: bash
         run: |
           mkdir -p dist-bin
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            cp dist/lrc-tools/lrc-tools.exe dist-bin/lrc-tools-${{ matrix.label }}.exe
-          else
-            cp dist/lrc-tools/lrc-tools dist-bin/lrc-tools-${{ matrix.label }}
-          fi
+          ext=""
+          if [ "$RUNNER_OS" = "Windows" ]; then ext=".exe"; fi
+          for name in lrc-tools lrc-fetch lrc-processor lrc-vis; do
+            cp "dist/$name$ext" "dist-bin/$name-${{ matrix.label }}$ext"
+          done
 
       - uses: actions/upload-artifact@v4
         with:
@@ -71,22 +82,32 @@ jobs:
   publish:
     needs: [sdist, binaries]
     runs-on: ubuntu-latest
+    env:
+      PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: "*-*"
+          name: dist-sdist
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          path: dist-bin
           merge-multiple: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            *.tar.gz
-            *.whl
-            lrc-tools-*
+            dist/*.tar.gz
+            dist/*.whl
+            dist-bin/*
           generate_release_notes: true
 
+      # Only runs when a PYPI_TOKEN secret is configured for the repository.
       - name: Publish to PyPI
+        if: env.PYPI_TOKEN != ''
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.PYPI_TOKEN }}
+          password: ${{ env.PYPI_TOKEN }}

@@ -3,9 +3,6 @@
 import json
 import re
 from pathlib import Path
-from typing import Dict, List
-
-
 
 _SRT_TIME_RE = re.compile(
     r'(\d{1,2}):(\d{2}):(\d{2}[,.]\d{1,3})'
@@ -20,8 +17,10 @@ def _srt_time_to_secs(time_str: str) -> float:
     return int(h) * 3600 + int(mi) * 60 + float(s.replace(',', '.'))
 
 
-def import_srt(srt_path: Path) -> List[Dict]:
-    text = srt_path.read_text(encoding='utf-8', errors='replace')
+def import_srt(srt_path: Path) -> list[dict]:
+    text = srt_path.read_text(encoding='utf-8-sig', errors='replace')
+    # Normalise Windows/old-Mac line endings so the block regex sees plain "\n".
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
     lines = []
     # Simple SRT parser: extract text between timestamps
     block_re = re.compile(
@@ -39,18 +38,24 @@ def import_srt(srt_path: Path) -> List[Dict]:
     return sorted(lines, key=lambda x: x['timestamp'])
 
 
-def import_json(json_path: Path) -> List[Dict]:
-    data = json.loads(json_path.read_text(encoding='utf-8'))
-    lyrics = data.get('lyrics', data)
-    if isinstance(lyrics, list):
-        return sorted(
-            (entry for entry in lyrics if entry.get('text')),
-            key=lambda x: x['timestamp']
-        )
-    return []
+def import_json(json_path: Path) -> list[dict]:
+    data = json.loads(json_path.read_text(encoding='utf-8-sig'))
+    lyrics = data.get('lyrics', data) if isinstance(data, dict) else data
+    if not isinstance(lyrics, list):
+        return []
+    entries = []
+    for entry in lyrics:
+        if not isinstance(entry, dict) or not entry.get('text'):
+            continue
+        try:
+            timestamp = float(entry['timestamp'])
+        except (KeyError, TypeError, ValueError):
+            continue
+        entries.append({**entry, 'timestamp': timestamp})
+    return sorted(entries, key=lambda x: x['timestamp'])
 
 
-def import_lrc(src_path: Path, fmt: str) -> List[Dict]:
+def import_lrc(src_path: Path, fmt: str) -> list[dict]:
     mapping = {"srt": import_srt, "json": import_json}
     fn = mapping.get(fmt.lower())
     if fn is None:

@@ -1,17 +1,16 @@
 """LRC Processor - Main processing logic."""
 
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from lrc_tools import check_optional
-from lrc_tools.utils import count_syllables
 from lrc_tools.splitter import split_phrase_intelligently
+from lrc_tools.utils import count_syllables
 
 
 def detect_onset_positions(
     audio_path: Path, start_time: float, end_time: float, num_words: int,
     blend_factor: float = 0.5,
-) -> List[float]:
+) -> list[float]:
     try:
         librosa = check_optional(
             "librosa",
@@ -61,9 +60,9 @@ def detect_onset_positions(
 
 
 def phrases_to_words(
-    phrases: List[Dict], audio_path: Optional[Path] = None,
+    phrases: list[dict], audio_path: Path | None = None,
     blend_factor: float = 0.5,
-) -> List[Dict]:
+) -> list[dict]:
     words = []
 
     for i, phrase in enumerate(phrases):
@@ -96,12 +95,12 @@ def phrases_to_words(
 
 
 def process_long_phrases(
-    lines: List[Dict],
+    lines: list[dict],
     total_duration: float,
     max_phrase_duration: float = 2.5,
     min_phrase_duration: float = 0.3,
     max_words_per_phrase: int = 8,
-) -> List[Dict]:
+) -> list[dict]:
     result = []
 
     for i, line in enumerate(lines):

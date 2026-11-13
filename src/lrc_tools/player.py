@@ -4,7 +4,6 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional, Tuple
 
 _IS_MACOS = sys.platform == "darwin"
 _IS_LINUX = sys.platform.startswith("linux")
@@ -13,7 +12,7 @@ _IS_WIN = os.name == "nt"
 _HAVE_PLAYERCTL = _IS_LINUX and __import__("shutil").which("playerctl") is not None
 
 
-def _run_osascript(script: str, timeout: float = 0.5) -> Optional[str]:
+def _run_osascript(script: str, timeout: float = 0.5) -> str | None:
     if not _IS_MACOS:
         return None
     try:
@@ -27,7 +26,7 @@ def _run_osascript(script: str, timeout: float = 0.5) -> Optional[str]:
         return None
 
 
-def _get_macos_player() -> Optional[str]:
+def _get_macos_player() -> str | None:
     script = """
     if application "Spotify" is running then
         return "spotify"
@@ -40,7 +39,7 @@ def _get_macos_player() -> Optional[str]:
     return _run_osascript(script)
 
 
-def get_position() -> Optional[float]:
+def get_position() -> float | None:
     if _HAVE_PLAYERCTL:
         return _get_position_playerctl()
     if _IS_MACOS:
@@ -48,7 +47,7 @@ def get_position() -> Optional[float]:
     return None
 
 
-def get_track() -> Optional[Tuple[str, str]]:
+def get_track() -> tuple[str, str] | None:
     if _HAVE_PLAYERCTL:
         return _get_track_playerctl()
     if _IS_MACOS:
@@ -56,7 +55,7 @@ def get_track() -> Optional[Tuple[str, str]]:
     return None
 
 
-def get_status() -> Optional[str]:
+def get_status() -> str | None:
     if _HAVE_PLAYERCTL:
         return _get_status_playerctl()
     if _IS_MACOS:
@@ -64,7 +63,7 @@ def get_status() -> Optional[str]:
     return None
 
 
-def get_audio_file_info() -> Optional[Path]:
+def get_audio_file_info() -> Path | None:
     if _HAVE_PLAYERCTL:
         return _get_audio_file_playerctl()
     return None
@@ -82,7 +81,7 @@ def is_playing() -> bool:
 
 # ── playerctl (Linux MPRIS) ───────────────────────────────────────────
 
-def _get_position_playerctl() -> Optional[float]:
+def _get_position_playerctl() -> float | None:
     try:
         result = subprocess.run(
             ["playerctl", "position"],
@@ -93,7 +92,7 @@ def _get_position_playerctl() -> Optional[float]:
         return None
 
 
-def _get_track_playerctl() -> Optional[Tuple[str, str]]:
+def _get_track_playerctl() -> tuple[str, str] | None:
     try:
         result = subprocess.run(
             ["playerctl", "metadata", "--format", "{{artist}}|||{{title}}"],
@@ -107,7 +106,7 @@ def _get_track_playerctl() -> Optional[Tuple[str, str]]:
     return None
 
 
-def _get_status_playerctl() -> Optional[str]:
+def _get_status_playerctl() -> str | None:
     try:
         result = subprocess.run(
             ["playerctl", "status"],
@@ -118,7 +117,7 @@ def _get_status_playerctl() -> Optional[str]:
         return None
 
 
-def _get_audio_file_playerctl() -> Optional[Path]:
+def _get_audio_file_playerctl() -> Path | None:
     try:
         result = subprocess.run(
             ["playerctl", "metadata", "--format", "{{xesam:url}}"],
@@ -209,7 +208,7 @@ end tell
 '''
 
 
-def _get_position_macos() -> Optional[float]:
+def _get_position_macos() -> float | None:
     player = _get_macos_player()
     if not player:
         return None
@@ -224,7 +223,7 @@ def _get_position_macos() -> Optional[float]:
         return None
 
 
-def _get_track_macos() -> Optional[Tuple[str, str]]:
+def _get_track_macos() -> tuple[str, str] | None:
     player = _get_macos_player()
     if not player:
         return None
@@ -236,7 +235,7 @@ def _get_track_macos() -> Optional[Tuple[str, str]]:
     return (parts[0], parts[1]) if len(parts) == 2 else None
 
 
-def _get_status_macos() -> Optional[str]:
+def _get_status_macos() -> str | None:
     player = _get_macos_player()
     if not player:
         return None

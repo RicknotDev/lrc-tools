@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lrc-tools"
-version = "0.4.0"
+version = "0.5.0"
 description = "Terminal synced lyrics toolkit with CLI tools and a Textual TUI"
 readme = "README.md"
 license = "MIT"
@@ -67,3 +67,16 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lrc_tools"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# Pin the rule set explicitly so new ruff releases don't silently change what CI enforces.
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]  # long help strings / rich markup; formatting is not enforced
+
+[tool.ruff.lint.isort]
+known-first-party = ["lrc_tools"]

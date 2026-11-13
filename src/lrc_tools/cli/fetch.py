@@ -6,19 +6,26 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from rich.console import Console
+from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeRemainingColumn
 from rich.prompt import Confirm, IntPrompt
-from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
+from rich.traceback import install as install_traceback
 
+from lrc_tools import __version__
 from lrc_tools.audio import get_audio_files
 from lrc_tools.config import Config
 from lrc_tools.puller import (
-    MUTAGEN_AVAILABLE, SYNCEDLYRICS_AVAILABLE,
-    extract_metadata, resolve_output_path, save_lyrics, search_song,
+    MUTAGEN_AVAILABLE,
+    SYNCEDLYRICS_AVAILABLE,
+    extract_metadata,
+    resolve_output_path,
+    save_lyrics,
+    search_song,
 )
-from rich.traceback import install as install_traceback
-install_traceback(show_locals=True)
+
+install_traceback(show_locals=False)
 
 console = Console()
 
@@ -38,7 +45,7 @@ EPILOG = """
 def main():
     parser = argparse.ArgumentParser(
         description="Batch download LRC lyrics from LRCLIB (with syncedlyrics fallback)",
-        epilog=EPILOG,
+        epilog=Text.from_markup(EPILOG).plain,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--audio-dir", type=Path, required=True, help="Directory containing audio files")
@@ -51,6 +58,8 @@ def main():
     parser.add_argument("--config", type=Path, help="Path to config.yaml")
     parser.add_argument("-y", "--yes", action="store_true", help="Download without confirmation prompt")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be downloaded without downloading")
+
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     args = parser.parse_args()
 
@@ -69,18 +78,25 @@ def main():
     preserve_structure = not args.no_preserve_structure
     overwrite = args.overwrite
 
-    def prompt_threads(label, default):
-        if default is not None:
-            return default
+    def prompt_threads(label, value, config_value):
+        if value is not None:
+            return max(1, value)
+        default_val = config_value if config_value else 5
+        # Never block on a prompt when running non-interactively (cron, pipes, CI) or with -y.
+        if args.yes or not sys.stdin.isatty():
+            return default_val
         try:
-            default_val = cfg.search_threads if cfg else 5
-            return IntPrompt.ask(f"  [bold]{label}[/] threads", default=default_val)
-        except KeyboardInterrupt:
+            return max(1, IntPrompt.ask(f"  [bold]{label}[/] threads", default=default_val))
+        except (KeyboardInterrupt, EOFError):
             console.print("\n[yellow]Cancelled[/]")
             sys.exit(0)
 
-    search_threads = prompt_threads("Search", args.search_threads)
-    download_threads = prompt_threads("Download", args.download_threads)
+    search_threads = prompt_threads(
+        "Search", args.search_threads, cfg.search_threads if cfg else None
+    )
+    download_threads = prompt_threads(
+        "Download", args.download_threads, cfg.download_threads if cfg else None
+    )
 
     if cfg and not args.overwrite:
         overwrite = cfg.overwrite
@@ -129,7 +145,7 @@ def main():
         sample.add_column("#", style="dim")
         sample.add_column("Artist", style="cyan")
         sample.add_column("Title", style="white")
-        for i, (fp, meta) in enumerate(songs[:5], 1):
+        for i, (_fp, meta) in enumerate(songs[:5], 1):
             sample.add_row(str(i), meta.get("artist") or "(no artist)", meta.get("title") or "?")
         if len(songs) > 5:
             sample.add_row("...", f"and {len(songs) - 5} more", "")

@@ -6,11 +6,14 @@ from pathlib import Path
 
 from rich.console import Console
 from rich.panel import Panel
+from rich.text import Text
+from rich.traceback import install as install_traceback
 
+from lrc_tools import __version__
 from lrc_tools.fonts import get_font, load_fonts_from_json, register_font
 from lrc_tools.visualizer import run_visualizer
-from rich.traceback import install as install_traceback
-install_traceback(show_locals=True)
+
+install_traceback(show_locals=False)
 
 console = Console()
 
@@ -31,7 +34,7 @@ EPILOG = """
 def main():
     parser = argparse.ArgumentParser(
         description="LRC Lyrics Visualizer — displays synced lyrics in the terminal",
-        epilog=EPILOG,
+        epilog=Text.from_markup(EPILOG).plain,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--lrc-dir", type=Path, required=True, help="Directory containing LRC files")
@@ -45,6 +48,8 @@ def main():
     parser.add_argument("--pin", action="store_true", help="Keep showing --lrc-file even if the player changes track")
     parser.add_argument("--play", action="store_true", help="Play matching audio locally (mpv/ffplay) while visualizing")
     parser.add_argument("--no-play", action="store_true", help="Do not start local playback even with --lrc-file")
+
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     args = parser.parse_args()
 

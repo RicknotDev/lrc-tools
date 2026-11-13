@@ -2,12 +2,11 @@
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from lrc_tools.parser import parse_lrc, parse_metadata
 
 
-def _lrc_to_srt_entries(lines: List[Dict]) -> List[str]:
+def _lrc_to_srt_entries(lines: list[dict]) -> list[str]:
     """Return list of SRT blocks (index + timing + text)."""
     blocks = []
     for i, line in enumerate(lines, 1):
@@ -21,10 +20,12 @@ def _lrc_to_srt_entries(lines: List[Dict]) -> List[str]:
 
 
 def _secs_to_srt(secs: float) -> tuple:
-    h = int(secs // 3600)
-    m = int((secs % 3600) // 60)
-    s = secs % 60
-    return f"{h:02d}", f"{m:02d}", f"{s:06.3f}".replace('.', ',')
+    # Work in integer milliseconds so 59.9996s becomes 00:01:00,000, never 00:00:60,000.
+    total_ms = round(max(0.0, secs) * 1000)
+    h, rem = divmod(total_ms, 3_600_000)
+    m, rem = divmod(rem, 60_000)
+    s, ms = divmod(rem, 1000)
+    return f"{h:02d}", f"{m:02d}", f"{s:02d},{ms:03d}"
 
 
 def export_srt(lrc_path: Path, output_path: Path) -> Path:
@@ -46,7 +47,7 @@ def export_json(lrc_path: Path, output_path: Path) -> Path:
     return output_path
 
 
-def export_lrc(lrc_path: Path, output_path: Path, fmt: str) -> Optional[Path]:
+def export_lrc(lrc_path: Path, output_path: Path, fmt: str) -> Path | None:
     mapping = {"srt": export_srt, "json": export_json}
     fn = mapping.get(fmt.lower())
     if fn is None:
