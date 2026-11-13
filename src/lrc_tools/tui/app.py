@@ -27,7 +27,7 @@ Footer {
 #main-grid {
     layout: grid;
     grid-size: 2;
-    grid-columns: 1fr 32;
+    grid-columns: 1fr 34;
     grid-gutter: 1 2;
     height: 1fr;
     padding: 1 2;
@@ -36,9 +36,7 @@ Footer {
     height: 1fr;
     padding: 0 1 1 1;
 }
-#content > Static:first-child {
-    margin-bottom: 1;
-}
+
 #status-panel {
     background: #11182d;
     border: round #355070;
@@ -65,8 +63,29 @@ ListView, MenuList {
 }
 ListView > ListItem, MenuList > ListItem {
     padding: 0 1;
-    height: 3;
-    margin: 0 0 1 0;
+    height: auto;
+}
+#menu > ListItem {
+    height: 1;
+}
+#banner {
+    margin-bottom: 0;
+}
+#task-title, #task-status {
+    padding: 0 2;
+}
+#task-status {
+    margin-bottom: 1;
+}
+DataTable {
+    background: #11182d;
+    border: round #355070;
+    height: 1fr;
+}
+#check-detail {
+    height: auto;
+    max-height: 9;
+    padding: 0 1;
 }
 ListView > ListItem.--highlight, MenuList > ListItem.--highlight {
     background: #1c2742;
@@ -121,7 +140,7 @@ PathInput { margin: 1 0; }
 class LrcToolsApp(App):
     CSS = CSS
     TITLE = "lrc-tools"
-    SUB_TITLE = "terminal lyrics"
+    SUB_TITLE = "letras sincronizadas"
 
     BINDINGS = [Binding("question_mark", "help", "Ayuda")]
 
@@ -143,8 +162,10 @@ class LrcToolsApp(App):
             self.call_after_refresh(menu.action_menu_vis)
 
     def action_help(self) -> None:
-        from lrc_tools.tui.screens.main_menu import QUICK_HINT
-        self.notify(QUICK_HINT, timeout=8)
+        from lrc_tools.tui.widgets.help_screen import HelpScreen
+
+        if not isinstance(self.screen, HelpScreen):
+            self.push_screen(HelpScreen())
 
 
 def run_tui(*, quick: bool = False) -> int:

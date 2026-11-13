@@ -80,6 +80,24 @@ class SongPickerScreen(Screen):
     def filter_changed(self, event: Input.Changed) -> None:
         self._rebuild_list(event.value)
 
+    @on(Input.Submitted, "#filter")
+    def filter_submitted(self, event: Input.Submitted) -> None:
+        """Enter in the search box launches the first matching song."""
+        first = next(iter(self._id_to_path.values()), None)
+        if first and first.is_file():
+            self.dismiss(first)
+        elif event.value.strip():
+            self.app.notify("Ninguna canción coincide con la búsqueda", severity="warning", timeout=3)
+        else:
+            self.dismiss(None)
+
+    def key_down(self) -> None:
+        # Only reached when the search box has focus (the list consumes its own arrows).
+        lv = self.query_one("#songs", ListView)
+        if self.focused is self.query_one("#filter", Input) and len(lv.children):
+            lv.focus()
+            lv.index = 1 if len(lv.children) > 1 else 0
+
     def action_cancel(self) -> None:
         self.dismiss(False)
 

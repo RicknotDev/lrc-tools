@@ -10,59 +10,54 @@ from textual.containers import Container, Vertical
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Label, ListItem, ListView, RichLog, Static
 
-from lrc_tools import core
+from lrc_tools import __version__, core
 from lrc_tools.tui.song_picker import SongPickerScreen
 from lrc_tools.tui.widgets.confirm_dialog import ConfirmDialog
 from lrc_tools.tui.widgets.status_panel import StatusPanel
 
-BANNER = r"""
-[bold #7aa2f7]
-  _      ____   ___    _____           _
- | |    |___ \ / _ \  |_   _|_ _  ___| |_
- | |      __) | | | |   | |/ _` |/ _ \ __|
- | |___  / __/| |_| |   | | (_| |  __/ |_
- |_____|_____| \___/    |_|\__,_|\___|\__|
-[/]
-[dim]Letras sincronizadas · TUI[/]
-"""
-
 MENU_ITEMS = [
     ("1", "setup", "Asistente de setup", "Configuración inicial guiada"),
-    ("2", "fetch", "Fetch lyrics", "Descargar .lrc desde LRCLIB"),
-    ("3", "process", "Process lyrics", "Convertir .lrc → .wlrc"),
-    ("4", "vis", "Launch visualizer", "Elegir canción y abrir lrc-vis"),
-    ("5", "download", "Descargar canciones", "Bajar canciones con spotdl a ~/Music"),
-    ("6", "paths", "Configure paths", "Carpeta de música y rutas XDG"),
-    ("7", "deps", "Dependency checker", "Ver e instalar dependencias"),
-    ("8", "settings", "Settings", "config.yaml y opciones"),
-    ("9", "delete_lyrics", "Borrar letras", "Eliminar todos los .lrc y .wlrc"),
-    ("q", "exit", "Exit", "Salir"),
+    ("2", "fetch", "Descargar letras", "Bajar .lrc desde LRCLIB"),
+    ("3", "process", "Procesar letras", "Convertir .lrc → .wlrc"),
+    ("4", "vis", "Visualizador", "Elegir canción y abrir lrc-vis"),
+    ("5", "check", "Revisar letras", "Validar y reparar .lrc"),
+    ("6", "download", "Descargar canciones", "Bajar canciones con spotdl"),
+    ("7", "paths", "Rutas", "Carpeta de música y rutas XDG"),
+    ("8", "deps", "Dependencias", "Ver e instalar dependencias"),
+    ("9", "settings", "Ajustes", "config.yaml y opciones"),
+    ("0", "delete_lyrics", "Borrar letras", "Eliminar todos los .lrc y .wlrc"),
+    ("q", "exit", "Salir", ""),
 ]
 
 QUICK_HINT = (
-    "[dim]Atajos: [/][bold]1-9[/] menú · [bold]f[/] fetch · [bold]p[/] process · "
-    "[bold]v[/] vis · [bold]d[/] descargar canción · [bold]r[/] rápido · "
-    "[bold]l[/] logs · [bold]q[/] salir"
+    "[dim]Enter elegir · números o letras como atajo · [/][bold]?[/][dim] todos los atajos[/]"
 )
+
+
+def _menu_label(key: str, title: str, desc: str) -> str:
+    desc_part = f"  [dim]{desc}[/]" if desc else ""
+    return f"[bold #e0af68]{key}[/]  [bold]{title:<20}[/]{desc_part}"
 
 
 class MainMenu(Screen):
     BINDINGS = [
+        Binding("f", "menu_fetch", "Descargar"),
+        Binding("p", "menu_process", "Procesar"),
+        Binding("v", "menu_vis", "Visualizar"),
+        Binding("r", "quick_run", "Rápido"),
         Binding("q", "quit", "Salir"),
         Binding("1", "menu_setup", "Setup", show=False),
         Binding("2", "menu_fetch", "Fetch", show=False),
         Binding("3", "menu_process", "Process", show=False),
         Binding("4", "menu_vis", "Vis", show=False),
-        Binding("5", "menu_download", "Download", show=False),
-        Binding("6", "menu_paths", "Paths", show=False),
-        Binding("7", "menu_deps", "Deps", show=False),
-        Binding("8", "menu_settings", "Settings", show=False),
-        Binding("9", "menu_delete_lyrics", "Delete all lyrics", show=False),
-        Binding("f", "menu_fetch", "Fetch", show=False),
-        Binding("p", "menu_process", "Process", show=False),
-        Binding("v", "menu_vis", "Vis", show=False),
+        Binding("5", "menu_check", "Revisar", show=False),
+        Binding("6", "menu_download", "Download", show=False),
+        Binding("7", "menu_paths", "Paths", show=False),
+        Binding("8", "menu_deps", "Deps", show=False),
+        Binding("9", "menu_settings", "Settings", show=False),
+        Binding("0", "menu_delete_lyrics", "Delete all lyrics", show=False),
+        Binding("c", "menu_check", "Revisar", show=False),
         Binding("d", "menu_download", "Download", show=False),
-        Binding("r", "quick_run", "Rápido", show=False),
         Binding("l", "toggle_logs", "Logs", show=False),
         Binding("R", "refresh_status", "Actualizar", show=False),
     ]
@@ -76,16 +71,19 @@ class MainMenu(Screen):
         yield Header(show_clock=True)
         with Container(id="main-grid"):
             with Vertical(id="content"):
-                yield Static(BANNER)
+                yield Static(
+                    f"[bold #7aa2f7]♪ lrc-tools[/] [dim]v{__version__} · letras sincronizadas en la terminal[/]",
+                    id="banner",
+                )
                 yield Static(QUICK_HINT, classes="hint")
                 items = [
-                    ListItem(Label(f"[bold]{title}[/]  [dim]({key})[/]\n{desc}"), id=action)
+                    ListItem(Label(_menu_label(key, title, desc)), id=action)
                     for key, action, title, desc in MENU_ITEMS
                 ]
                 yield ListView(*items, id="menu", classes="MenuList")
                 with Container(id="log-panel", classes="hidden"):
                     yield RichLog(id="log", highlight=True, markup=True)
-            yield StatusPanel(id="status", classes="status-panel")
+            yield StatusPanel(id="status-panel")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -147,6 +145,7 @@ class MainMenu(Screen):
             "deps": self.action_menu_deps,
             "settings": self.action_menu_settings,
             "delete_lyrics": self.action_menu_delete_lyrics,
+            "check": self.action_menu_check,
         }
         fn = handlers.get(action)
         if fn:
@@ -166,6 +165,10 @@ class MainMenu(Screen):
 
     def action_menu_vis(self) -> None:
         self._launch_vis()
+
+    def action_menu_check(self) -> None:
+        from lrc_tools.tui.screens.lyrics_check import LyricsCheckScreen
+        self.app.push_screen(LyricsCheckScreen(self.app_state), self._after_subscreen)
 
     def action_menu_download(self) -> None:
         from lrc_tools.tui.screens.downloader import DownloaderScreen

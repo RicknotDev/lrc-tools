@@ -28,9 +28,9 @@ Verify with `playerctl status`.
 
 **Fix:**
 ```bash
-pip install --user "lrc-tools[tui]"
+pip install --user "lrc-tools[tui] @ git+https://github.com/RicknotDev/lrc-tools.git"
 # Or full:
-pip install --user "lrc-tools[full]"
+pip install --user "lrc-tools[full] @ git+https://github.com/RicknotDev/lrc-tools.git"
 ```
 
 ## `librosa` is not installed
@@ -39,7 +39,7 @@ pip install --user "lrc-tools[full]"
 
 **Fix:**
 ```bash
-pip install --user "lrc-tools[timing]"
+pip install --user "lrc-tools[timing] @ git+https://github.com/RicknotDev/lrc-tools.git"
 ```
 
 ## No lyrics match found
@@ -94,13 +94,13 @@ Then restart your terminal. The `install.ps1` script does this automatically.
 If you see `externally-managed-environment` error:
 
 ```bash
-pip install --user --break-system-packages lrc-tools
+pip install --user --break-system-packages "lrc-tools @ git+https://github.com/RicknotDev/lrc-tools.git"
 ```
 
 Or use a virtual environment:
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate && pip install lrc-tools
+python3 -m venv .venv && source .venv/bin/activate && pip install "lrc-tools @ git+https://github.com/RicknotDev/lrc-tools.git"
 ```
 
 ## Windows-specific

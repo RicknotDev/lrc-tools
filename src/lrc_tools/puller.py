@@ -24,7 +24,7 @@ except ImportError:
 
 _syncedlyrics_module = check_optional(
     "syncedlyrics",
-    'python3 -m pip install --user "lrc-tools[full]"',
+    'python -m pip install mutagen syncedlyrics',
     "fallback synced lyrics search",
 )
 if _syncedlyrics_module is not None:

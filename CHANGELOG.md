@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] — 2026-11-13
+
+### Added
+- TUI: **Revisar letras** screen (`c` / `5`) — validates every downloaded `.lrc`, explains each problem, and repairs duplicate/unsorted timestamps with a `.bak` backup; plain-text lyrics are flagged as not repairable
+- TUI: full shortcut reference on `?` (was an 8-second toast)
+- TUI: "Siguiente paso" hint in the status panel that guides you through folder → fetch → process → visualize
+- TUI: task screens show the running phase and elapsed time; `c` cancels the running process and `Esc` asks before leaving a running task
+- TUI song picker: `Enter` in the search box launches the first match, `↓` jumps into the list
+- `tests/test_tui_improvements.py`: 18 tests (process runner, cancel, lyrics check/repair, help, small-terminal layout, next-step logic)
+
+### Fixed
+- TUI: the ASCII banner was garbled (it did not spell "lrc-tools") and took 8 rows; replaced by a one-line header with the version
+- TUI: at 100×30 only 3 of 10 menu options were visible; items are now single-line and all fit in 80×24
+- TUI: the status panel had no border/padding (CSS targeted a non-existent id)
+- TUI: leaving a task with `Esc` left the child process running in the background; the "Ctrl+C cancela" hint actually quit the whole app
+- TUI: child processes inherited the terminal's stdin (could hang the TUI waiting for input) and wrapped output at 80 columns
+- Quick mode closed itself the instant it finished, so the log could not be read
+- Install hints (`pip install "lrc-tools[...]"`) pointed at PyPI, where the package is not published; they now install the actual dependency
+
+### Changed
+- README and docs install from GitHub (`pip install "lrc-tools[full] @ git+https://github.com/RicknotDev/lrc-tools.git"`) instead of PyPI
+- TUI menu labels are consistently in Spanish; menu numbers changed: 5 = Revisar letras, 6 = Descargar canciones, 7 = Rutas, 8 = Dependencias, 9 = Ajustes, 0 = Borrar letras
+- `ConfirmDialog`: `Esc` now means "No"
+
 ## [0.5.0] — 2026-11-13
 
 ### Added
